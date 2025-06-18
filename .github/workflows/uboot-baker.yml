@@ -1,0 +1,86 @@
+name: "Bake on dispatch"
+run-name: "Build for ${{ github.event.inputs.board }} by @${{ github.actor }} (Trigger: ${{ github.event.inputs.trigger_source }})"
+
+on:
+  workflow_dispatch:
+    inputs:
+      board:
+        description: "Board name"
+        required: true
+        type: choice
+        default: "handy-hpd5kx"
+        options:
+        - "handy-hpd5kx-aim7"
+        - "handy-hpd5kx"
+      trigger_source:
+        description: "Source of the trigger (manual or workflow)"
+        required: false
+        type: string
+        default: "manual"
+      artifact_retention_days:
+        description: "Artifact retention period in days"
+        required: false
+        type: number
+        default: 1
+
+env:
+  RECIPE_REP: "diverger/ubuntu-rockchip"
+  RECIPE_REF: "diverger"
+  RECIPE_PATH: "."
+
+jobs:
+  build:
+    if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
+
+    runs-on: ubuntu-latest
+    name: Build u-boot
+
+    steps:
+      - name: Show trigger source
+        run: |
+          echo "Workflow triggered by: ${{ github.event.inputs.trigger_source }}"
+
+      # - name: Manual Trigger Step
+      #   if: github.event.inputs.trigger_source == 'manual'
+      #   run: echo "This step runs only for manual triggers."
+
+      # - name: Workflow Trigger Step
+      #   if: github.event.inputs.trigger_source == 'workflow'
+      #   run: echo "This step runs only when triggered by another workflow."
+
+      - name: Calculate expire date
+        id: expire
+        run: |
+          expire_date=$(date -u -d "+${{ github.event.inputs.artifact_retention_days }} days" +"%Y-%m-%d")
+          echo "Expire date: $expire_date"
+          echo "expire_date=$expire_date" >> $GITHUB_OUTPUT
+          echo "### Artifact Expire Date: $expire_date" >> $GITHUB_STEP_SUMMARY
+
+      - name: Get more disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
+      - name: Checkout private repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.RECIPE_REP }}
+          ref: ${{ env.RECIPE_REF }}
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          path: ${{ env.RECIPE_PATH }}
+          clean: false
+          fetch-depth: 1
+          lfs: true
+
+      - name: Run local build
+        id: baker_step
+        uses: "./.github/actions/uboot-baker"
+        with:
+          board: ${{ github.event.inputs.board }}
+          repo_access_token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          artifact_retention_days: ${{ format('{0}',  github.event.inputs.artifact_retention_days) }}
