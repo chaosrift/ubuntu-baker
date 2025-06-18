@@ -1,4 +1,4 @@
-name: "Bake on dispatch"
+name: "Bake kernel on dispatch"
 run-name: "Build for ${{ github.event.inputs.suite || github.event.client_payload.suite || 'noble' }} by @${{ github.actor }} (Trigger: github.event.client_payload.trigger_source || github.event_name }})"
 
 on:

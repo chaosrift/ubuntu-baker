@@ -1,4 +1,4 @@
-name: "Bake on dispatch"
+name: "Bake u-boot on dispatch"
 run-name: "Build for ${{ github.event.inputs.board || github.event.client_payload.board }} by @${{ github.actor }} (Trigger: ${{ github.event.client_payload.trigger_source || github.event_name }})"
 
 on:
