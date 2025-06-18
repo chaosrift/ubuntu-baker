@@ -1,17 +1,14 @@
 name: "Bake kernel on dispatch"
-run-name: "Build for ${{ github.event.inputs.suite || github.event.client_payload.suite || 'noble' }} by @${{ github.actor }} (Trigger: github.event.client_payload.trigger_source || github.event_name }})"
+run-name: "Build for ${{ github.event.inputs.board || github.event.client_payload.board || 'noble' }} by @${{ github.actor }} (Trigger: github.event.client_payload.trigger_source || github.event_name }})"
 
 on:
   workflow_dispatch:
     inputs:
-      suite:
-        description: "Suite name"
+      board:
+        description: "Board name"
         required: true
-        type: choice
-        default: "noble"
-        options:
-        - "jammy"
-        - "noble"
+        type: string
+        default: "orangepi-5-plus"
 
       artifact_retention_days:
         description: "Artifact retention period in days"
@@ -27,7 +24,7 @@ env:
   RECIPE_REPO: "diverger/ubuntu-rockchip"
   RECIPE_PATH: "."
   # Extract values from either workflow_dispatch inputs or repository_dispatch client_payload
-  SUITE: ${{ github.event.inputs.suite || github.event.client_payload.suite || 'noble' }}
+  BOARD: ${{ github.event.inputs.board || github.event.client_payload.board || 'noble' }}
   TRIGGER_SOURCE: ${{ github.event.client_payload.trigger_source || github.event_name }}
   ARTIFACT_RETENTION_DAYS: ${{ github.event.inputs.artifact_retention_days || github.event.client_payload.artifact_retention_days || '1' }}
 
@@ -42,7 +39,7 @@ jobs:
         run: |
           echo "Workflow triggered by: ${{ env.TRIGGER_SOURCE }}"
           echo "Event name: ${{ github.event_name }}"
-          echo "Suite: ${{ env.SUITE }}"
+          echo "Board: ${{ env.BOARD }}"
           echo "Artifact retention days: ${{ env.ARTIFACT_RETENTION_DAYS }}"
 
       - name: Show repository dispatch payload (if applicable)
@@ -84,5 +81,5 @@ jobs:
         uses: "./.github/actions/kernel-baker"
         with:
           GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-          suite: ${{ env.SUITE }}
+          board: ${{ env.BOARD }}
           artifact_retention_days: ${{ env.ARTIFACT_RETENTION_DAYS }}
