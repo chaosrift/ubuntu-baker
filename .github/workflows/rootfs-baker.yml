@@ -1,0 +1,96 @@
+name: Bake rootfs on dispatch
+run-name: "Build for ${{ github.event.inputs.suite || github.event.client_payload.suite || 'noble' }} ${{ github.event.inputs.flavor || github.event.client_payload.flavor || 'desktop' }} by @${{ github.actor }} (Trigger: ${{ github.event.client_payload.trigger_source || 'repository_dispatch' }})"
+
+on:
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: "Suite name"
+        required: true
+        type: choice
+        default: "noble"
+        options:
+          - "jammy"
+          - "noble"
+
+      flavor:
+        description: "Flavor type"
+        required: true
+        type: choice
+        default: "desktop"
+        options:
+          - "desktop"
+          - "server"
+
+      artifact_retention_days:
+        description: "Number of days to retain the artifact"
+        required: false
+        type: number
+        default: 1
+
+  repository_dispatch:
+    types: event-rootfs-bake
+
+env:
+  RECIPE_REPO: "diverger/ubuntu-rockchip"
+  RECIPE_REF: "diverger"
+  RECIPE_PATH: "."
+  ROOTFS_PATH: "./build"
+
+jobs:
+  build:
+    if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
+    runs-on: ubuntu-latest
+    name: Build rootfs
+
+    env:
+      SUITE: ${{ github.event.inputs.suite || github.event.client_payload.suite || 'noble' }}
+      FLAVOR: ${{ github.event.inputs.flavor || github.event.client_payload.flavor || 'desktop' }}
+      TRIGGER_SOURCE: ${{ github.event.client_payload.trigger_source || 'repository_dispatch' }}
+      ARTIFACT_RETENTION_DAYS: ${{ github.event.inputs.artifact_retention_days || github.event.client_payload.artifact_retention_days || 1 }}
+
+    steps:
+
+      - name: Show trigger source
+        run: |
+          echo "Workflow triggered by: ${{ env.TRIGGER_SOURCE }}"
+          echo "Suite: ${{ env.SUITE }}"
+          echo "Flavor: ${{ env.FLAVOR }}"
+          echo "Artifact retention days: ${{ env.ARTIFACT_RETENTION_DAYS }}"
+
+      - name: Calculate expire date
+        id: expire
+        run: |
+          expire_date=$(date -u -d "+${{ env.ARTIFACT_RETENTION_DAYS }} days" +"%Y-%m-%d")
+          echo "Expire date: $expire_date"
+          echo "expire_date=$expire_date" >> $GITHUB_OUTPUT
+          echo "### Artifact Expire Date: $expire_date" >> $GITHUB_STEP_SUMMARY
+
+      - name: Get more disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
+      - name: Checkout private repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.RECIPE_REPO }}
+          ref: ${{ env.RECIPE_REF }}
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          path: ${{ env.RECIPE_PATH }}
+          clean: false
+          fetch-depth: 1
+
+      - name: Run local build
+        id: baker_step
+        uses: "./.github/actions/rootfs-baker"
+        with:
+          suite: ${{ env.SUITE }}
+          flavor: ${{ env.FLAVOR }}
+          repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
+          artifact_retention_days: ${{ env.ARTIFACT_RETENTION_DAYS }}
