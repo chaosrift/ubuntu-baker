@@ -1,51 +1,55 @@
 name: "Bake on dispatch"
-run-name: "Build for ${{ github.event.inputs.board || github.event.client_payload.board }} by @${{ github.actor }} (Trigger: ${{ github.event.client_payload.trigger_source || github.event_name }})"
+run-name: "Build for ${{ github.event.inputs.suite || github.event.client_payload.suite || 'noble' }} by @${{ github.actor }} (Trigger: github.event.client_payload.trigger_source || github.event_name }})"
 
 on:
   workflow_dispatch:
     inputs:
-      board:
-        description: 'Board to build'
+      suite:
+        description: "Suite name"
         required: true
-        default: 'orange-5-plus'
-        type: string
+        type: choice
+        default: "noble"
+        options:
+        - "jammy"
+        - "noble"
 
       artifact_retention_days:
-        description: 'Number of days to retain artifacts'
+        description: "Artifact retention period in days"
         required: false
-        default: '1'
-        type: string
+        type: number
+        default: 1
 
   repository_dispatch:
     types:
-      - event-uboot-bake
+      - event-kernel-bake
 
 env:
-  RECIPE_REP: "diverger/ubuntu-rockchip"
-  RECIPE_REF: "diverger"
+  RECIPE_REPO: "diverger/ubuntu-rockchip"
   RECIPE_PATH: "."
-  # Handle inputs from both workflow_dispatch and repository_dispatch
-  BOARD: ${{ github.event.inputs.board || github.event.client_payload.board || 'orange-5-plus' }}
+  # Extract values from either workflow_dispatch inputs or repository_dispatch client_payload
+  SUITE: ${{ github.event.inputs.suite || github.event.client_payload.suite || 'noble' }}
   TRIGGER_SOURCE: ${{ github.event.client_payload.trigger_source || github.event_name }}
-  ARTIFACT_RETENTION_DAYS: ${{ github.event.inputs.artifact_retention_days || github.event.client_payload.artifact_retention_days || 1 }}
+  ARTIFACT_RETENTION_DAYS: ${{ github.event.inputs.artifact_retention_days || github.event.client_payload.artifact_retention_days || '1' }}
 
 jobs:
   build:
     if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
-
     runs-on: ubuntu-latest
-    name: Build u-boot
+    name: Build kernel
 
     steps:
       - name: Show trigger source
         run: |
           echo "Workflow triggered by: ${{ env.TRIGGER_SOURCE }}"
-          echo "Board: ${{ env.BOARD }}"
           echo "Event name: ${{ github.event_name }}"
-          if [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
-            echo "Repository dispatch event type: ${{ github.event.action }}"
-            echo "Client payload: ${{ toJson(github.event.client_payload) }}"
-          fi
+          echo "Suite: ${{ env.SUITE }}"
+          echo "Artifact retention days: ${{ env.ARTIFACT_RETENTION_DAYS }}"
+
+      - name: Show repository dispatch payload (if applicable)
+        if: github.event_name == 'repository_dispatch'
+        run: |
+          echo "Repository dispatch event type: ${{ github.event.action }}"
+          echo "Client payload: ${{ toJson(github.event.client_payload) }}"
 
       - name: Calculate expire date
         id: expire
@@ -68,8 +72,7 @@ jobs:
       - name: Checkout private repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ env.RECIPE_REP }}
-          ref: ${{ env.RECIPE_REF }}
+          repository: ${{ env.RECIPE_REPO }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           path: ${{ env.RECIPE_PATH }}
           clean: false
@@ -78,8 +81,8 @@ jobs:
 
       - name: Run local build
         id: baker_step
-        uses: "./.github/actions/uboot-baker"
+        uses: "./.github/actions/kernel-baker"
         with:
-          board: ${{ env.BOARD }}
-          repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
+          GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+          suite: ${{ env.SUITE }}
           artifact_retention_days: ${{ env.ARTIFACT_RETENTION_DAYS }}
