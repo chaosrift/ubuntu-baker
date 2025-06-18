@@ -1,32 +1,39 @@
 name: "Bake on dispatch"
-run-name: "Build for ${{ github.event.inputs.board }} by @${{ github.actor }} (Trigger: ${{ github.event.inputs.trigger_source }})"
+run-name: "Build for ${{ github.event.inputs.board || github.event.client_payload.board }} by @${{ github.actor }} (Trigger: ${{ github.event.inputs.trigger_source || github.event.client_payload.trigger_source || github.event_name }})"
 
 on:
   workflow_dispatch:
     inputs:
       board:
-        description: "Board name"
+        description: 'Board to build'
         required: true
-        type: choice
-        default: "handy-hpd5kx"
-        options:
-        - "handy-hpd5kx-aim7"
-        - "handy-hpd5kx"
-      trigger_source:
-        description: "Source of the trigger (manual or workflow)"
-        required: false
+        default: 'orange-5-plus'
         type: string
-        default: "manual"
-      artifact_retention_days:
-        description: "Artifact retention period in days"
+
+      trigger_source:
+        description: 'Source of the trigger'
         required: false
-        type: number
-        default: 1
+        default: 'workflow_dispatch'
+        type: string
+
+      artifact_retention_days:
+        description: 'Number of days to retain artifacts'
+        required: false
+        default: '1'
+        type: string
+
+  repository_dispatch:
+    types:
+      - event-uboot-bake
 
 env:
   RECIPE_REP: "diverger/ubuntu-rockchip"
   RECIPE_REF: "diverger"
   RECIPE_PATH: "."
+  # Handle inputs from both workflow_dispatch and repository_dispatch
+  BOARD: ${{ github.event.inputs.board || github.event.client_payload.board || 'orange-5-plus' }}
+  TRIGGER_SOURCE: ${{ github.event.inputs.trigger_source || github.event.client_payload.trigger_source || github.event_name }}
+  ARTIFACT_RETENTION_DAYS: ${{ github.event.inputs.artifact_retention_days || github.event.client_payload.artifact_retention_days || 1 }}
 
 jobs:
   build:
@@ -38,20 +45,19 @@ jobs:
     steps:
       - name: Show trigger source
         run: |
-          echo "Workflow triggered by: ${{ github.event.inputs.trigger_source }}"
+          echo "Workflow triggered by: ${{ env.TRIGGER_SOURCE }}"
+          echo "Board: ${{ env.BOARD }}"
+          echo "Event name: ${{ github.event_name }}"
+          if [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
+            echo "Repository dispatch event type: ${{ github.event.action }}"
+            echo "Client payload: ${{ toJson(github.event.client_payload) }}"
+          fi
 
-      # - name: Manual Trigger Step
-      #   if: github.event.inputs.trigger_source == 'manual'
-      #   run: echo "This step runs only for manual triggers."
-
-      # - name: Workflow Trigger Step
-      #   if: github.event.inputs.trigger_source == 'workflow'
-      #   run: echo "This step runs only when triggered by another workflow."
 
       - name: Calculate expire date
         id: expire
         run: |
-          expire_date=$(date -u -d "+${{ github.event.inputs.artifact_retention_days }} days" +"%Y-%m-%d")
+          expire_date=$(date -u -d "+${{ env.ARTIFACT_RETENTION_DAYS }} days" +"%Y-%m-%d")
           echo "Expire date: $expire_date"
           echo "expire_date=$expire_date" >> $GITHUB_OUTPUT
           echo "### Artifact Expire Date: $expire_date" >> $GITHUB_STEP_SUMMARY
@@ -81,6 +87,6 @@ jobs:
         id: baker_step
         uses: "./.github/actions/uboot-baker"
         with:
-          board: ${{ github.event.inputs.board }}
+          board: ${{ env.BOARD }}
           repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
-          artifact_retention_days: ${{ format('{0}',  github.event.inputs.artifact_retention_days) }}
+          artifact_retention_days: ${{ env.ARTIFACT_RETENTION_DAYS }}
