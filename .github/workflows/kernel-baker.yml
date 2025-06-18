@@ -22,6 +22,7 @@ on:
 
 env:
   RECIPE_REPO: "diverger/ubuntu-rockchip"
+  RECIPE_REF: "diverger"
   RECIPE_PATH: "."
   # Extract values from either workflow_dispatch inputs or repository_dispatch client_payload
   BOARD: ${{ github.event.inputs.board || github.event.client_payload.board || 'noble' }}
@@ -70,6 +71,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ env.RECIPE_REPO }}
+          ref: ${{ env.RECIPE_REF }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           path: ${{ env.RECIPE_PATH }}
           clean: false
