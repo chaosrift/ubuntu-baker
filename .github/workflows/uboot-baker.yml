@@ -10,12 +10,6 @@ on:
         default: 'orange-5-plus'
         type: string
 
-      trigger_source:
-        description: 'Source of the trigger'
-        required: false
-        default: 'workflow_dispatch'
-        type: string
-
       artifact_retention_days:
         description: 'Number of days to retain artifacts'
         required: false
@@ -32,7 +26,7 @@ env:
   RECIPE_PATH: "."
   # Handle inputs from both workflow_dispatch and repository_dispatch
   BOARD: ${{ github.event.inputs.board || github.event.client_payload.board || 'orange-5-plus' }}
-  TRIGGER_SOURCE: ${{ github.event.inputs.trigger_source || github.event.client_payload.trigger_source || github.event_name }}
+  TRIGGER_SOURCE: ${{ github.event.client_payload.trigger_source || github.event_name }}
   ARTIFACT_RETENTION_DAYS: ${{ github.event.inputs.artifact_retention_days || github.event.client_payload.artifact_retention_days || 1 }}
 
 jobs:
