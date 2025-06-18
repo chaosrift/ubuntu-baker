@@ -71,7 +71,7 @@ jobs:
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
-          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
           path: ${{ env.RECIPE_PATH }}
           clean: false
           fetch-depth: 1
@@ -82,5 +82,5 @@ jobs:
         uses: "./.github/actions/uboot-baker"
         with:
           board: ${{ github.event.inputs.board }}
-          repo_access_token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
           artifact_retention_days: ${{ format('{0}',  github.event.inputs.artifact_retention_days) }}
