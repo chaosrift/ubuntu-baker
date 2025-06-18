@@ -82,6 +82,6 @@ jobs:
         id: baker_step
         uses: "./.github/actions/kernel-baker"
         with:
-          GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+          repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
           board: ${{ env.BOARD }}
           artifact_retention_days: ${{ env.ARTIFACT_RETENTION_DAYS }}
