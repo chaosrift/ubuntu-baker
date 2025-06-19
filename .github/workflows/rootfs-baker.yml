@@ -93,6 +93,7 @@ jobs:
           path: ${{ env.RECIPE_PATH }}
           clean: false
           fetch-depth: 1
+          lfs: true
 
       - name: Run local build
         id: baker_step
