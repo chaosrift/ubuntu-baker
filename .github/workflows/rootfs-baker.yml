@@ -4,6 +4,13 @@ run-name: "Build for ${{ github.event.inputs.suite || github.event.client_payloa
 on:
   workflow_dispatch:
     inputs:
+
+      board:
+        description: "Board name"
+        required: true
+        type: string
+        default: "orangepi-5-plus"
+
       suite:
         description: "Suite name"
         required: true
@@ -44,6 +51,7 @@ jobs:
     name: Build rootfs
 
     env:
+      BOARD: ${{ github.event.inputs.board || github.event.client_payload.board || 'orangepi-5-plus' }}
       SUITE: ${{ github.event.inputs.suite || github.event.client_payload.suite || 'noble' }}
       FLAVOR: ${{ github.event.inputs.flavor || github.event.client_payload.flavor || 'desktop' }}
       TRIGGER_SOURCE: ${{ github.event.client_payload.trigger_source || 'repository_dispatch' }}
@@ -90,6 +98,7 @@ jobs:
         id: baker_step
         uses: "./.github/actions/rootfs-baker"
         with:
+          board: ${{ env.BOARD }}
           suite: ${{ env.SUITE }}
           flavor: ${{ env.FLAVOR }}
           repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
