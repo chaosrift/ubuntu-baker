@@ -81,5 +81,8 @@ jobs:
         uses: "./.github/actions/uboot-baker"
         with:
           board: ${{ env.BOARD }}
+          registry_upload: 'true'
+          registry_check: 'true'
+          registry_token: ${{ secrets.GH_ACCESS_TOKEN }}
           repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
           artifact_retention_days: ${{ env.ARTIFACT_RETENTION_DAYS }}

@@ -36,7 +36,8 @@ on:
         default: 1
 
   repository_dispatch:
-    types: [event-rootfs-bake]
+    types:
+      - event-rootfs-bake
 
 env:
   RECIPE_REPO: "diverger/ubuntu-rockchip"
