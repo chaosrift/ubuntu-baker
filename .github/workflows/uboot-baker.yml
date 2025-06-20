@@ -16,6 +16,31 @@ on:
         default: '1'
         type: string
 
+      registry_type:
+        description: 'Container registry to use'
+        required: false
+        default: 'ghcr'
+        type: choice
+        options:
+          - 'ghcr'
+          - 'acr'
+          - 'none'
+
+      registry_server:
+        description: 'Registry server URL (auto-detected if empty)'
+        required: false
+        type: string
+
+      registry_namespace:
+        description: 'Registry namespace (auto-detected if empty)'
+        required: false
+        type: string
+
+      registry_username:
+        description: 'Registry username (auto-detected if empty)'
+        required: false
+        type: string
+
   repository_dispatch:
     types:
       - event-uboot-bake
@@ -28,6 +53,10 @@ env:
   BOARD: ${{ github.event.inputs.board || github.event.client_payload.board || 'orange-5-plus' }}
   TRIGGER_SOURCE: ${{ github.event.client_payload.trigger_source || github.event_name }}
   ARTIFACT_RETENTION_DAYS: ${{ github.event.inputs.artifact_retention_days || github.event.client_payload.artifact_retention_days || 1 }}
+  REGISTRY_TYPE: ${{ github.event.inputs.registry_type || github.event.client_payload.registry_type || 'ghcr' }}
+  REGISTRY_SERVER: ${{ github.event.inputs.registry_server || github.event.client_payload.registry_server || secrets.ACR_SERVERID }}
+  REGISTRY_NAMESPACE: ${{ github.event.inputs.registry_namespace || github.event.client_payload.registry_namespace || github.actor }}
+  REGISTRY_USERNAME: ${{ github.event.inputs.registry_username || github.event.client_payload.registry_username }}
 
 jobs:
   build:
@@ -81,8 +110,11 @@ jobs:
         uses: "./.github/actions/uboot-baker"
         with:
           board: ${{ env.BOARD }}
-          registry_upload: 'true'
-          registry_check: 'true'
-          registry_token: ${{ secrets.GH_ACCESS_TOKEN }}
+          registry_upload: ${{ env.REGISTRY_TYPE != 'none' }}
+          registry_check: ${{ env.REGISTRY_TYPE != 'none' }}
+          registry_url: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_SERVERID || '' }}
+          registry_namespace: ${{ env.REGISTRY_NAMESPACE }}
+          registry_username: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_USERNAME || github.actor }}
+          registry_token: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_PASSWORD || secrets.GH_ACCESS_TOKEN }}
           repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
           artifact_retention_days: ${{ env.ARTIFACT_RETENTION_DAYS }}
