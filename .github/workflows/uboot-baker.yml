@@ -112,7 +112,7 @@ jobs:
           board: ${{ env.BOARD }}
           registry_upload: ${{ env.REGISTRY_TYPE != 'none' }}
           registry_check: ${{ env.REGISTRY_TYPE != 'none' }}
-          registry_url: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_SERVERID || '' }}
+          registry_url: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_SERVERID || 'ghcr.io' }}
           registry_namespace: ${{ env.REGISTRY_NAMESPACE }}
           registry_username: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_USERNAME || github.actor }}
           registry_token: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_PASSWORD || secrets.GH_ACCESS_TOKEN }}
