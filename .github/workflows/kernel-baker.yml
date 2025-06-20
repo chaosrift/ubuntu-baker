@@ -1,5 +1,5 @@
 name: "Bake kernel on dispatch"
-run-name: "Build for ${{ github.event.inputs.board || github.event.client_payload.board }} by @${{ github.actor }} (Trigger: ${{ github.event.client_payload.trigger_source || github.event_name }})"
+run-name: "Build kernel for ${{ github.event.inputs.board || github.event.client_payload.board }} by @${{ github.actor }} (Trigger: ${{ github.event.client_payload.trigger_source || github.event_name }})"
 
 on:
   workflow_dispatch:

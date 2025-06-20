@@ -1,5 +1,5 @@
 name: "Bake rootfs on dispatch"
-run-name: "Build for ${{ github.event.inputs.suite || github.event.client_payload.suite || 'noble' }} ${{ github.event.inputs.flavor || github.event.client_payload.flavor || 'desktop' }} by @${{ github.actor }} (Trigger: ${{ github.event.client_payload.trigger_source || github.event_name }})"
+run-name: "Build rootfs for ${{ github.event.inputs.suite || github.event.client_payload.suite || 'noble' }} ${{ github.event.inputs.flavor || github.event.client_payload.flavor || 'desktop' }} by @${{ github.actor }} (Trigger: ${{ github.event.client_payload.trigger_source || github.event_name }})"
 
 on:
   workflow_dispatch:
