@@ -48,7 +48,7 @@ on:
 env:
   RECIPE_REP: "diverger/ubuntu-rockchip"
   RECIPE_REF: "diverger"
-  RECIPE_PATH: "."
+  RECIPE_DIR: "."
   # Handle inputs from both workflow_dispatch and repository_dispatch
   BOARD: ${{ github.event.inputs.board || github.event.client_payload.board || 'orange-5-plus' }}
   TRIGGER_SOURCE: ${{ github.event.client_payload.trigger_source || github.event_name }}
@@ -100,7 +100,7 @@ jobs:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
-          path: ${{ env.RECIPE_PATH }}
+          path: ${{ env.RECIPE_DIR }}
           clean: false
           fetch-depth: 1
           lfs: true
