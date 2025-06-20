@@ -94,7 +94,7 @@ jobs:
           large-packages: true
           swap-storage: true
 
-      - name: Checkout private repository
+      - name: Checkout build repository
         uses: actions/checkout@v4
         with:
           repository: ${{ env.RECIPE_REP }}
