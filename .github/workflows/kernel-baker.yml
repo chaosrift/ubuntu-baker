@@ -1,37 +1,67 @@
 name: "Bake kernel on dispatch"
-run-name: "Build for ${{ github.event.inputs.board || github.event.client_payload.board || 'noble' }} by @${{ github.actor }} (Trigger: ${{ github.event.client_payload.trigger_source || github.event_name }})"
+run-name: "Build for ${{ github.event.inputs.board || github.event.client_payload.board }} by @${{ github.actor }} (Trigger: ${{ github.event.client_payload.trigger_source || github.event_name }})"
 
 on:
   workflow_dispatch:
     inputs:
       board:
-        description: "Board name"
+        description: 'Board to build'
         required: true
+        default: 'orange-5-plus'
         type: string
-        default: "orangepi-5-plus"
 
       artifact_retention_days:
-        description: "Artifact retention period in days"
+        description: 'Number of days to retain artifacts'
         required: false
-        type: number
-        default: 1
+        default: '1'
+        type: string
+
+      registry_type:
+        description: 'Container registry to use'
+        required: false
+        default: 'ghcr'
+        type: choice
+        options:
+          - 'ghcr'
+          - 'acr'
+          - 'none'
+
+      registry_server:
+        description: 'Registry server URL (auto-detected if empty)'
+        required: false
+        type: string
+
+      registry_namespace:
+        description: 'Registry namespace (auto-detected if empty)'
+        required: false
+        type: string
+
+      registry_username:
+        description: 'Registry username (auto-detected if empty)'
+        required: false
+        type: string
 
   repository_dispatch:
     types:
       - event-kernel-bake
 
 env:
-  RECIPE_REPO: "diverger/ubuntu-rockchip"
+  RECIPE_REP: "diverger/ubuntu-rockchip"
   RECIPE_REF: "diverger"
   RECIPE_PATH: "."
-  # Extract values from either workflow_dispatch inputs or repository_dispatch client_payload
-  BOARD: ${{ github.event.inputs.board || github.event.client_payload.board || 'noble' }}
+  # Handle inputs from both workflow_dispatch and repository_dispatch
+  BOARD: ${{ github.event.inputs.board || github.event.client_payload.board || 'handy-hpd5kx-aim7' }}
   TRIGGER_SOURCE: ${{ github.event.client_payload.trigger_source || github.event_name }}
-  ARTIFACT_RETENTION_DAYS: ${{ github.event.inputs.artifact_retention_days || github.event.client_payload.artifact_retention_days || '1' }}
+  ARTIFACT_RETENTION_DAYS: ${{ github.event.inputs.artifact_retention_days || github.event.client_payload.artifact_retention_days || 1 }}
+  REGISTRY_TYPE: ${{ github.event.inputs.registry_type || github.event.client_payload.registry_type || 'ghcr' }}
+  REGISTRY_SERVER: ${{ github.event.inputs.registry_server || github.event.client_payload.registry_server || secrets.ACR_SERVERID }}
+  REGISTRY_NAMESPACE: ${{ github.event.inputs.registry_namespace || github.event.client_payload.registry_namespace || github.actor }}
+  REGISTRY_USERNAME: ${{ github.event.inputs.registry_username || github.event.client_payload.registry_username }}
 
 jobs:
   build:
     if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
+
     runs-on: ubuntu-latest
     name: Build kernel
 
@@ -39,15 +69,12 @@ jobs:
       - name: Show trigger source
         run: |
           echo "Workflow triggered by: ${{ env.TRIGGER_SOURCE }}"
-          echo "Event name: ${{ github.event_name }}"
           echo "Board: ${{ env.BOARD }}"
-          echo "Artifact retention days: ${{ env.ARTIFACT_RETENTION_DAYS }}"
-
-      - name: Show repository dispatch payload (if applicable)
-        if: github.event_name == 'repository_dispatch'
-        run: |
-          echo "Repository dispatch event type: ${{ github.event.action }}"
-          echo "Client payload: ${{ toJson(github.event.client_payload) }}"
+          echo "Event name: ${{ github.event_name }}"
+          if [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
+            echo "Repository dispatch event type: ${{ github.event.action }}"
+            echo "Client payload: ${{ toJson(github.event.client_payload) }}"
+          fi
 
       - name: Calculate expire date
         id: expire
@@ -67,10 +94,10 @@ jobs:
           large-packages: true
           swap-storage: true
 
-      - name: Checkout private repository
+      - name: Checkout build repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ env.RECIPE_REPO }}
+          repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           path: ${{ env.RECIPE_PATH }}
@@ -82,6 +109,12 @@ jobs:
         id: baker_step
         uses: "./.github/actions/kernel-baker"
         with:
-          repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
           board: ${{ env.BOARD }}
+          registry_upload: ${{ env.REGISTRY_TYPE != 'none' }}
+          registry_check: ${{ env.REGISTRY_TYPE != 'none' }}
+          registry_url: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_SERVERID || 'ghcr.io' }}
+          registry_namespace: ${{ env.REGISTRY_NAMESPACE }}
+          registry_username: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_USERNAME || github.actor }}
+          registry_token: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_PASSWORD || secrets.GH_ACCESS_TOKEN }}
+          repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
           artifact_retention_days: ${{ env.ARTIFACT_RETENTION_DAYS }}
