@@ -1,5 +1,5 @@
-name: "Bake u-boot on dispatch"
-run-name: "Build u-boot for ${{ github.event.inputs.board || github.event.client_payload.board }} by @${{ github.actor }} (Trigger: ${{ github.event.client_payload.trigger_source || github.event_name }})"
+name: "Bake uboot on dispatch"
+run-name: "Build uboot for ${{ github.event.inputs.board || github.event.client_payload.board }} by @${{ github.actor }} (Trigger: ${{ github.event.client_payload.trigger_source || github.event_name }})"
 
 on:
   workflow_dispatch:
