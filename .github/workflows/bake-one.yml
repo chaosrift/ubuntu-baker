@@ -3,20 +3,19 @@ run-name: >
   Build ${{ github.event.inputs.board }}
   ${{ github.event.inputs.suite }}
   ${{ github.event.inputs.flavor }}
-  by @${{ github.actor }} with ${{ github.event.inputs.trigger_source }}
-  (runner: ${{ github.event.inputs.runner_label }}, retention: ${{ github.event.inputs.image_artifact_retention_days }} d)
+  by @${{ github.actor }} (Trigger: ${{ github.event_name }})"
 
 on:
 
   workflow_dispatch:
     inputs:
       board:
-        description: 'Target board (e.g., handy-hpd5kx, rock-5b)'
+        description: 'Target board (e.g., orangepi-5-plus, rock-5b)'
         required: true
         type: choice
         default: handy-hpd5kx
         options:
-          - handy-hpd5kx
+          - handy-hpd5kx-aim7
           - orangepi-5-plus
 
       suite:
@@ -49,12 +48,6 @@ on:
           - ubuntu-24.04
           - ubuntu-22.04
 
-      trigger_source:
-        description: "Source of the trigger (e.g., manual, workflow)"
-        required: false
-        type: string
-        default: "manual"
-
       baker_artifact_retention_days:
         description: 'Retention days for baker artifacts'
         required: false
@@ -80,7 +73,7 @@ jobs:
     steps:
       - name: Show trigger source
         run: |
-          echo "Workflow triggered by: ${{ github.event.inputs.trigger_source }}"
+          echo "Workflow triggered by: ${{ github.event_name }}"
 
       - name: Get more disk space
         uses: jlumbroso/free-disk-space@main
