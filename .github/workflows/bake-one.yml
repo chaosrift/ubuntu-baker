@@ -32,10 +32,10 @@ on:
         default: desktop
         options:
           - desktop
-          # - server
+          - server
           # Add other supported flavors as needed
 
-      runner_label:
+      runner:
         description: 'Specify the runner label (e.g., ubuntu-latest, windows-latest, self-hosted-runner).'
         required: false
         type: choice
@@ -64,7 +64,7 @@ env:
 jobs:
   rootfs:
     if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
-    runs-on: ${{ github.event.inputs.runner_label }}
+    runs-on: ${{ github.event.inputs.runner }}
     name: Build rootfs
 
     steps:
@@ -120,7 +120,7 @@ jobs:
 
   kernel:
     if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
-    runs-on: ${{ github.event.inputs.runner_label }}
+    runs-on: ${{ github.event.inputs.runner }}
     name: Build kernel
 
     steps:
@@ -158,7 +158,7 @@ jobs:
 
   uboot:
     if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
-    runs-on: ${{ github.event.inputs.runner_label }}
+    runs-on: ${{ github.event.inputs.runner }}
     name: Build u-boot
 
     steps:
@@ -196,7 +196,7 @@ jobs:
 
   image:
     if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
-    runs-on: ${{ github.event.inputs.runner_label }}
+    runs-on: ${{ github.event.inputs.runner }}
     needs: [rootfs, kernel, uboot]
     name: Build Ubuntu Rockchip Image
 
