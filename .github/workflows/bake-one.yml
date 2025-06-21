@@ -3,7 +3,7 @@ run-name: >
   Build ${{ github.event.inputs.board }}
   ${{ github.event.inputs.suite }}
   ${{ github.event.inputs.flavor }}
-  by @${{ github.actor }} (Trigger: ${{ github.event_name }})"
+  by @${{ github.actor }} (Trigger: ${{ github.event_name }})
 
 on:
 
