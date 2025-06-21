@@ -235,6 +235,10 @@ jobs:
           suite: ${{ github.event.inputs.suite }}
           flavor: ${{ github.event.inputs.flavor }}
           artifact_retention_days: ${{ github.event.inputs.image_artifact_retention_days }}
+          registry_check: "true"
+          registry_upload: "true"
+          registry_token: ${{ secrets.GH_ACCESS_TOKEN }}
+          registry_namespace: ${{ github.repository }}
 
       - name: Calculate expire date
         if: ${{ success() && steps.image_build_step.outcome == 'success' }}
