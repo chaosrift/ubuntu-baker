@@ -15,6 +15,16 @@ run-name: >
     90
   }} d)
 
+# This workflow builds Ubuntu Rockchip images using a smart matrix system that
+# deduplicates artifact builds. The matrix generator analyzes board configurations
+# and only builds the unique rootfs, kernel, and u-boot artifacts needed.
+#
+# Boards to build can be specified:
+# 1. Default: handy-hpd5kx,orangepi-5-plus,orangepi-5b,radxa-rock-5b
+# 2. Workflow input: Set "boards_to_build" when running manually
+# 3. Environment variable: Edit BOARDS_TO_BUILD below
+# 4. Repository dispatch: Pass boards_to_build in client_payload
+
 on:
   repository_dispatch:
     types: [build-trigger]
@@ -30,6 +40,12 @@ on:
           - ubuntu-latest
           - ubuntu-24.04
           - ubuntu-22.04
+
+      boards_to_build:
+        description: 'Comma-separated list of boards to build (leave empty to use default)'
+        required: false
+        type: string
+        default: ''
 
       trigger_source:
         description: "Source of the trigger (e.g., manual, workflow)"
@@ -64,6 +80,8 @@ on:
 env:
   RECIPE_REPO: "diverger/ubuntu-rockchip"
   RECIPE_PATH: "."
+  # Define the boards to build (change this list as needed)
+  BOARDS_TO_BUILD: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.boards_to_build != '' && github.event.inputs.boards_to_build) || (github.event_name == 'repository_dispatch' && github.event.client_payload.boards_to_build) || 'handy-hpd5kx,handy-hpd5kx-aim7,orangepi-5-plus' }}
   EFFECTIVE_TRIGGER_SOURCE: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.trigger_source) || (github.event_name == 'repository_dispatch' && github.event.client_payload.trigger_source) || 'manual' }}
   EFFECTIVE_BAKER_ARTIFACT_RETENTION_DAYS: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.baker_artifact_retention_days) || (github.event_name == 'repository_dispatch' && github.event.client_payload.baker_artifact_retention_days) || 1 }}
   EFFECTIVE_IMAGE_ARTIFACT_RETENTION_DAYS: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.image_artifact_retention_days) || (github.event_name == 'repository_dispatch' && github.event.client_payload.image_artifact_retention_days) || 90 }}
@@ -72,8 +90,72 @@ env:
   EFFECTIVE_RUNNER_LABEL: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner_label) || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner_label) || 'ubuntu-latest' }}
 
 jobs:
+  matrix:
+    if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
+    runs-on: ubuntu-latest
+    name: Generate Build Matrices
+    outputs:
+      rootfs-matrix: ${{ steps.matrices.outputs.rootfs-matrix }}
+      kernel-matrix: ${{ steps.matrices.outputs.kernel-matrix }}
+      uboot-matrix: ${{ steps.matrices.outputs.uboot-matrix }}
+      image-matrix: ${{ steps.matrices.outputs.image-matrix }}
+    steps:
+      - name: Checkout private repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.RECIPE_REPO }}
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          path: ${{ env.RECIPE_PATH }}
+          clean: false
+          fetch-depth: 1
+          lfs: true
+
+      - name: Generate build matrices
+        id: matrices
+        run: |
+          cd ${{ env.RECIPE_PATH }}
+          chmod +x scripts/ci/generate-build-matrix.sh
+
+          echo "🎯 Building for boards: ${{ env.BOARDS_TO_BUILD }}"
+
+          echo "Generating rootfs matrix..."
+          rootfs_matrix=$(scripts/ci/generate-build-matrix.sh --boards "${{ env.BOARDS_TO_BUILD }}" --type rootfs --output json)
+          echo "rootfs-matrix=$rootfs_matrix" >> $GITHUB_OUTPUT
+          echo "Rootfs matrix: $rootfs_matrix"
+
+          echo "Generating kernel matrix..."
+          kernel_matrix=$(scripts/ci/generate-build-matrix.sh --boards "${{ env.BOARDS_TO_BUILD }}" --type kernel --output json)
+          echo "kernel-matrix=$kernel_matrix" >> $GITHUB_OUTPUT
+          echo "Kernel matrix: $kernel_matrix"
+
+          echo "Generating uboot matrix..."
+          uboot_matrix=$(scripts/ci/generate-build-matrix.sh --boards "${{ env.BOARDS_TO_BUILD }}" --type uboot --output json)
+          echo "uboot-matrix=$uboot_matrix" >> $GITHUB_OUTPUT
+          echo "Uboot matrix: $uboot_matrix"
+
+          echo "Generating image matrix..."
+          image_matrix=$(scripts/ci/generate-build-matrix.sh --boards "${{ env.BOARDS_TO_BUILD }}" --type image --output json)
+          echo "image-matrix=$image_matrix" >> $GITHUB_OUTPUT
+          echo "Image matrix: $image_matrix"
+
+      - name: Show matrix summary
+        run: |
+          echo "### 📊 Build Matrix Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Matrix Type | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Rootfs | $(echo '${{ steps.matrices.outputs.rootfs-matrix }}' | jq length) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Kernel | $(echo '${{ steps.matrices.outputs.kernel-matrix }}' | jq length) |" >> $GITHUB_STEP_SUMMARY
+          echo "| U-Boot | $(echo '${{ steps.matrices.outputs.uboot-matrix }}' | jq length) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Images | $(echo '${{ steps.matrices.outputs.image-matrix }}' | jq length) |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 U-Boot Deduplication Details" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          echo '${{ steps.matrices.outputs.uboot-matrix }}' | jq . >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
   rootfs:
     if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
+    needs: matrix
     runs-on:
       - ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner_label)
         || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner_label)
@@ -81,13 +163,7 @@ jobs:
     name: Build rootfs
     strategy:
       fail-fast: false
-      matrix:
-        flavor:
-          - desktop
-          # - server
-        suite:
-          - jammy
-          - noble
+      matrix: ${{ fromJson(needs.matrix.outputs.rootfs-matrix) }}
 
     steps:
       - name: Show trigger source
@@ -109,7 +185,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ env.RECIPE_REPO }}
-          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
           path: ${{ env.RECIPE_PATH }}
           clean: false
           fetch-depth: 1
@@ -121,11 +197,13 @@ jobs:
         with:
           suite: ${{ matrix.suite }}
           flavor: ${{ matrix.flavor }}
-          repo_access_token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          variant: ${{ matrix.variant }}
+          repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
           artifact_retention_days: ${{ format('{0}', env.EFFECTIVE_BAKER_ARTIFACT_RETENTION_DAYS) }}
 
   kernel:
     if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
+    needs: matrix
     runs-on:
       - ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner_label)
         || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner_label)
@@ -133,10 +211,7 @@ jobs:
     name: Build kernel
     strategy:
       fail-fast: false
-      matrix:
-        suite:
-          - jammy
-          - noble
+      matrix: ${{ fromJson(needs.matrix.outputs.kernel-matrix) }}
 
     steps:
       - name: Show trigger source
@@ -158,7 +233,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ env.RECIPE_REPO }}
-          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
           path: ${{ env.RECIPE_PATH }}
           clean: false
           fetch-depth: 1
@@ -168,12 +243,12 @@ jobs:
         id: baker_step
         uses: "./.github/actions/kernel-baker"
         with:
-          repo_access_token: ${{ secrets.REPO_ACCESS_TOKEN }}
-          suite: ${{ matrix.suite }}
+          repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
           artifact_retention_days: ${{ format('{0}', env.EFFECTIVE_BAKER_ARTIFACT_RETENTION_DAYS) }}
 
   uboot:
     if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
+    needs: matrix
     runs-on:
       - ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner_label)
         || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner_label)
@@ -181,11 +256,7 @@ jobs:
     name: Build u-boot
     strategy:
       fail-fast: false
-      matrix:
-        board:
-          - handy-hpd5kx
-          - orangepi-5-plus
-          # Add other boards as needed
+      matrix: ${{ fromJson(needs.matrix.outputs.uboot-matrix) }}
 
     steps:
       - name: Show trigger source
@@ -207,7 +278,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ env.RECIPE_REPO }}
-          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
           path: ${{ env.RECIPE_PATH }}
           clean: false
           fetch-depth: 1
@@ -217,8 +288,8 @@ jobs:
         id: baker_step
         uses: "./.github/actions/uboot-baker"
         with:
-          board: ${{ matrix.board }}
-          repo_access_token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          board: ${{ matrix.build_target == 'legacy' && matrix.representative_board || matrix.representative_board }}
+          repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
           artifact_retention_days: ${{ format('{0}', env.EFFECTIVE_BAKER_ARTIFACT_RETENTION_DAYS) }}
 
   image:
@@ -227,23 +298,11 @@ jobs:
       - ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner_label)
         || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner_label)
         || 'ubuntu-latest' }}
-    needs: [rootfs, kernel, uboot]
+    needs: [matrix, rootfs, kernel, uboot]
     name: Build Ubuntu Rockchip Image
     strategy:
       fail-fast: false
-      matrix:
-        board:
-          - handy-hpd5kx
-          - orangepi-5-plus
-        flavor:
-          - desktop
-          #- server
-        suite:
-          - jammy
-          - noble
-        exclude:
-          - board: armsom-sige5
-            suite: jammy
+      matrix: ${{ fromJson(needs.matrix.outputs.image-matrix) }}
 
     steps:
       - name: Show trigger source
@@ -265,7 +324,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ env.RECIPE_REPO }}
-          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
           path: ${{ env.RECIPE_PATH }}
           clean: false
           fetch-depth: 1
@@ -275,16 +334,17 @@ jobs:
         id: image_build_step
         uses: ./.github/actions/image-baker
         with:
-          action_access_token: ${{ secrets.ACTION_ACCESS_TOKEN }}
-          repo_access_token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          action_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
+          repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
           board: ${{ matrix.board }}
           suite: ${{ matrix.suite }}
           flavor: ${{ matrix.flavor }}
+          variant: ${{ matrix.variant }}
           release_id: ${{ env.EFFECTIVE_RELEASE_ID }}
           release_tag: ${{ env.EFFECTIVE_RELEASE_TAG }}
           artifact_retention_days: ${{ env.EFFECTIVE_IMAGE_ARTIFACT_RETENTION_DAYS }}
-          oss_key_id: ${{ secrets.OSS_KEY_ID }}
-          oss_key_secret: ${{ secrets.OSS_KEY_SECRET }}
+          oss_key_id: ${{ secrets.OSS_ACCESS_KEY }}
+          oss_key_secret: ${{ secrets.OSS_SECRET_KEY }}
 
       - name: Calculate expire date
         if: ${{ success() && steps.image_build_step.outcome == 'success' }}
