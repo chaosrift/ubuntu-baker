@@ -159,7 +159,7 @@ jobs:
   uboot:
     if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
     runs-on: ${{ github.event.inputs.runner }}
-    name: Build u-boot
+    name: Build uboot
 
     steps:
       - name: Show trigger source
