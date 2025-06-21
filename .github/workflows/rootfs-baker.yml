@@ -1,15 +1,18 @@
 name: "Bake rootfs on dispatch"
-run-name: "Build rootfs for ${{ github.event.inputs.suite || github.event.client_payload.suite || 'noble' }} ${{ github.event.inputs.flavor || github.event.client_payload.flavor || 'desktop' }} by @${{ github.actor }} (Trigger: ${{ github.event.client_payload.trigger_source || github.event_name }})"
+run-name: "Build rootfs for ${{ github.event.inputs.suite || github.event.client_payload.suite || 'noble' }} ${{ github.event.inputs.flavor || github.event.client_payload.flavor || 'desktop' }} (${{ github.event.inputs.variant || github.event.client_payload.variant || 'direct' }}) by @${{ github.actor }} (Trigger: ${{ github.event.client_payload.trigger_source || github.event_name }})"
 
 on:
   workflow_dispatch:
     inputs:
 
-      board:
-        description: "Board name"
+      variant:
+        description: "Rootfs variant"
         required: true
-        type: string
-        default: "orangepi-5-plus"
+        type: choice
+        default: "direct"
+        options:
+          - "direct"
+          - "livecd"
 
       suite:
         description: "Suite name"
@@ -69,7 +72,7 @@ env:
   RECIPE_REF: "diverger"
   RECIPE_DIR: "."
   # Handle inputs from both workflow_dispatch and repository_dispatch
-  BOARD: ${{ github.event.inputs.board || github.event.client_payload.board || 'orangepi-5-plus' }}
+  VARIANT: ${{ github.event.inputs.variant || github.event.client_payload.variant || 'direct' }}
   SUITE: ${{ github.event.inputs.suite || github.event.client_payload.suite || 'noble' }}
   FLAVOR: ${{ github.event.inputs.flavor || github.event.client_payload.flavor || 'desktop' }}
   TRIGGER_SOURCE: ${{ github.event.client_payload.trigger_source || github.event_name }}
@@ -90,7 +93,7 @@ jobs:
       - name: Show trigger source
         run: |
           echo "Workflow triggered by: ${{ env.TRIGGER_SOURCE }}"
-          echo "Board: ${{ env.BOARD }}"
+          echo "Variant: ${{ env.VARIANT }}"
           echo "Suite: ${{ env.SUITE }}"
           echo "Flavor: ${{ env.FLAVOR }}"
           echo "Event name: ${{ github.event_name }}"
@@ -132,7 +135,7 @@ jobs:
         id: baker_step
         uses: "./.github/actions/rootfs-baker"
         with:
-          board: ${{ env.BOARD }}
+          variant: ${{ env.VARIANT }}
           suite: ${{ env.SUITE }}
           flavor: ${{ env.FLAVOR }}
           registry_upload: ${{ env.REGISTRY_TYPE != 'none' }}
