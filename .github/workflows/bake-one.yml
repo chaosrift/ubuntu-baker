@@ -12,11 +12,8 @@ on:
       board:
         description: 'Target board (e.g., orangepi-5-plus, rock-5b)'
         required: true
-        type: choice
-        default: handy-hpd5kx
-        options:
-          - handy-hpd5kx-aim7
-          - orangepi-5-plus
+        type: string
+        default: 'orangepi-5-plus'
 
       suite:
         description: 'Ubuntu suite (e.g., noble, jammy)'
