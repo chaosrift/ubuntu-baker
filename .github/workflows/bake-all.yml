@@ -288,7 +288,7 @@ jobs:
         id: baker_step
         uses: "./.github/actions/uboot-baker"
         with:
-          board: ${{ matrix.build_target == 'legacy' && matrix.representative_board || matrix.representative_board }}
+          board: ${{ matrix.representative_board }}
           repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
           artifact_retention_days: ${{ format('{0}', env.EFFECTIVE_BAKER_ARTIFACT_RETENTION_DAYS) }}
 
@@ -340,6 +340,9 @@ jobs:
           suite: ${{ matrix.suite }}
           flavor: ${{ matrix.flavor }}
           variant: ${{ matrix.variant }}
+          rootfs_artifact_name: ${{ matrix.rootfs_artifact_name || '' }}
+          kernel_artifact_name: ${{ matrix.kernel_artifact_name || '' }}
+          uboot_artifact_name: ${{ matrix.uboot_artifact_name || '' }}
           release_id: ${{ env.EFFECTIVE_RELEASE_ID }}
           release_tag: ${{ env.EFFECTIVE_RELEASE_TAG }}
           artifact_retention_days: ${{ env.EFFECTIVE_IMAGE_ARTIFACT_RETENTION_DAYS }}
