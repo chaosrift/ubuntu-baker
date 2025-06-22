@@ -1,19 +1,13 @@
 name: Build All Image in Parallel
 run-name: >
-  Build by @${{ github.actor }} with ${{
-    (github.event_name == 'workflow_dispatch' && github.event.inputs.trigger_source) ||
+  Build by @${{ github.actor }} [${{
     (github.event_name == 'repository_dispatch' && github.event.client_payload.trigger_source) ||
-    'manual'
-  }}
-  (runner: ${{
-    (github.event_name == 'workflow_dispatch' && github.event.inputs.runner_label) ||
-    (github.event_name == 'repository_dispatch' && github.event.client_payload.runner_label) ||
+    github.event_name
+  }}] on ${{
+    (github.event_name == 'workflow_dispatch' && github.event.inputs.runner) ||
+    (github.event_name == 'repository_dispatch' && github.event.client_payload.runner) ||
     'ubuntu-latest'
-  }}, retention: ${{
-    (github.event_name == 'workflow_dispatch' && github.event.inputs.image_artifact_retention_days) ||
-    (github.event_name == 'repository_dispatch' && github.event.client_payload.image_artifact_retention_days) ||
-    90
-  }} d)
+  }}
 
 # This workflow builds Ubuntu Rockchip images using a smart matrix system that
 # deduplicates artifact builds. The matrix generator analyzes board configurations
@@ -31,7 +25,7 @@ on:
 
   workflow_dispatch:
     inputs:
-      runner_label:
+      runner:
         description: 'Specify the runner label (e.g., ubuntu-latest, windows-latest, self-hosted-runner).'
         required: false
         type: choice
@@ -46,12 +40,6 @@ on:
         required: false
         type: string
         default: ''
-
-      trigger_source:
-        description: "Source of the trigger (e.g., manual, workflow)"
-        required: false
-        type: string
-        default: "manual"
 
       baker_artifact_retention_days:
         description: 'Retention days for baker artifacts'
@@ -82,12 +70,12 @@ env:
   RECIPE_PATH: "."
   # Define the boards to build (change this list as needed)
   BOARDS_TO_BUILD: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.boards_to_build != '' && github.event.inputs.boards_to_build) || (github.event_name == 'repository_dispatch' && github.event.client_payload.boards_to_build) || 'handy-hpd5kx,handy-hpd5kx-aim7,orangepi-5-plus' }}
-  EFFECTIVE_TRIGGER_SOURCE: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.trigger_source) || (github.event_name == 'repository_dispatch' && github.event.client_payload.trigger_source) || 'manual' }}
+  EFFECTIVE_TRIGGER_SOURCE: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.trigger_source) || github.event_name }}
   EFFECTIVE_BAKER_ARTIFACT_RETENTION_DAYS: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.baker_artifact_retention_days) || (github.event_name == 'repository_dispatch' && github.event.client_payload.baker_artifact_retention_days) || 1 }}
   EFFECTIVE_IMAGE_ARTIFACT_RETENTION_DAYS: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.image_artifact_retention_days) || (github.event_name == 'repository_dispatch' && github.event.client_payload.image_artifact_retention_days) || 90 }}
   EFFECTIVE_RELEASE_ID: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.release_id) || (github.event_name == 'repository_dispatch' && github.event.client_payload.release_id) || '' }}
   EFFECTIVE_RELEASE_TAG: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag) || (github.event_name == 'repository_dispatch' && github.event.client_payload.release_tag) || '' }}
-  EFFECTIVE_RUNNER_LABEL: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner_label) || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner_label) || 'ubuntu-latest' }}
+  EFFECTIVE_RUNNER: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner) || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner) || 'ubuntu-latest' }}
 
 jobs:
   matrix:
@@ -157,8 +145,8 @@ jobs:
     if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
     needs: matrix
     runs-on:
-      - ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner_label)
-        || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner_label)
+      - ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner)
+        || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner)
         || 'ubuntu-latest' }}
     name: Build rootfs
     strategy:
@@ -205,8 +193,8 @@ jobs:
     if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
     needs: matrix
     runs-on:
-      - ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner_label)
-        || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner_label)
+      - ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner)
+        || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner)
         || 'ubuntu-latest' }}
     name: Build kernel
     strategy:
@@ -250,8 +238,8 @@ jobs:
     if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
     needs: matrix
     runs-on:
-      - ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner_label)
-        || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner_label)
+      - ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner)
+        || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner)
         || 'ubuntu-latest' }}
     name: Build u-boot
     strategy:
@@ -295,8 +283,8 @@ jobs:
   image:
     if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' && always() }}
     runs-on:
-      - ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner_label)
-        || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner_label)
+      - ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner)
+        || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner)
         || 'ubuntu-latest' }}
     needs: [matrix, rootfs, kernel, uboot]
     name: Build Ubuntu Rockchip Image
@@ -352,6 +340,18 @@ jobs:
       - name: Calculate expire date
         if: ${{ success() && steps.image_build_step.outcome == 'success' }}
         id: expire
+        run: |
+          expire_date=$(date -u -d "+${{ env.EFFECTIVE_IMAGE_ARTIFACT_RETENTION_DAYS }} days" +"%Y-%m-%d")
+          echo "Expire date: $expire_date"
+          echo "expire_date=$expire_date" >> $GITHUB_OUTPUT
+          echo "📅 Artifact Expire Date: $expire_date" >> $GITHUB_STEP_SUMMARY
+        run: |
+          expire_date=$(date -u -d "+${{ env.EFFECTIVE_IMAGE_ARTIFACT_RETENTION_DAYS }} days" +"%Y-%m-%d")
+          echo "Expire date: $expire_date"
+          echo "expire_date=$expire_date" >> $GITHUB_OUTPUT
+          echo "📅 Artifact Expire Date: $expire_date" >> $GITHUB_STEP_SUMMARY
+          echo "expire_date=$expire_date" >> $GITHUB_OUTPUT
+          echo "📅 Artifact Expire Date: $expire_date" >> $GITHUB_STEP_SUMMARY
         run: |
           expire_date=$(date -u -d "+${{ env.EFFECTIVE_IMAGE_ARTIFACT_RETENTION_DAYS }} days" +"%Y-%m-%d")
           echo "Expire date: $expire_date"
