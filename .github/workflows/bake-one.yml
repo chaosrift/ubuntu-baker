@@ -58,8 +58,9 @@ on:
         default: 90
 
 env:
-  RECIPE_REPO: "diverger/ubuntu-rockchip"
-  RECIPE_PATH: "."
+  RECIPE_REP: "diverger/ubuntu-rockchip"
+  RECIPE_REF: "diverger"
+  RECIPE_DIR: "."
 
 jobs:
   rootfs:
@@ -85,9 +86,10 @@ jobs:
       - name: Checkout private repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ env.RECIPE_REPO }}
+          repository: ${{ env.RECIPE_REP }}
+          ref: ${{ env.RECIPE_REF }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
-          path: ${{ env.RECIPE_PATH }}
+          path: ${{ env.RECIPE_DIR }}
           clean: false
           fetch-depth: 1
           lfs: true
@@ -141,9 +143,10 @@ jobs:
       - name: Checkout private repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ env.RECIPE_REPO }}
+          repository: ${{ env.RECIPE_REP }}
+          ref: ${{ env.RECIPE_REF }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
-          path: ${{ env.RECIPE_PATH }}
+          path: ${{ env.RECIPE_DIR }}
           clean: false
           fetch-depth: 1
           lfs: true
@@ -176,12 +179,13 @@ jobs:
           large-packages: true
           swap-storage: true
 
-      - name: Checkout private repository
+      - name: Checkout build repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ env.RECIPE_REPO }}
+          repository: ${{ env.RECIPE_REP }}
+          ref: ${{ env.RECIPE_REF }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
-          path: ${{ env.RECIPE_PATH }}
+          path: ${{ env.RECIPE_DIR }}
           clean: false
           fetch-depth: 1
           lfs: true
@@ -218,9 +222,10 @@ jobs:
       - name: Checkout private repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ env.RECIPE_REPO }}
+          repository: ${{ env.RECIPE_REP }}
+          ref: ${{ env.RECIPE_REF }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
-          path: ${{ env.RECIPE_PATH }}
+          path: ${{ env.RECIPE_DIR }}
           clean: false
           fetch-depth: 1
           lfs: true
