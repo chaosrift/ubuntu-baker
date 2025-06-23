@@ -67,6 +67,8 @@ jobs:
     if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
     runs-on: ${{ github.event.inputs.runner }}
     name: Build rootfs
+    outputs:
+      artifact_name: ${{ steps.rootfs_baker_step.outputs.artifact_name }}
 
     steps:
       - name: Show trigger source
@@ -111,7 +113,7 @@ jobs:
           fi
 
       - name: Run local build
-        id: baker_step
+        id: rootfs_baker_step
         uses: "./.github/actions/rootfs-baker"
         with:
           suite: ${{ github.event.inputs.suite }}
@@ -124,6 +126,8 @@ jobs:
     if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
     runs-on: ${{ github.event.inputs.runner }}
     name: Build kernel
+    outputs:
+      artifact_name: ${{ steps.kernel_baker_step.outputs.artifact_name }}
 
     steps:
       - name: Show trigger source
@@ -152,7 +156,7 @@ jobs:
           lfs: true
 
       - name: Run local build
-        id: baker_step
+        id: kernel_baker_step
         uses: "./.github/actions/kernel-baker"
         with:
           board: ${{ github.event.inputs.board }}
@@ -163,6 +167,8 @@ jobs:
     if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
     runs-on: ${{ github.event.inputs.runner }}
     name: Build uboot
+    outputs:
+      artifact_name: ${{ steps.uboot_baker_step.outputs.artifact_name }}
 
     steps:
       - name: Show trigger source
@@ -191,7 +197,7 @@ jobs:
           lfs: true
 
       - name: Run local build
-        id: baker_step
+        id: uboot_baker_step
         uses: "./.github/actions/uboot-baker"
         with:
           board: ${{ github.event.inputs.board }}
@@ -239,6 +245,9 @@ jobs:
           board: ${{ github.event.inputs.board }}
           suite: ${{ github.event.inputs.suite }}
           flavor: ${{ github.event.inputs.flavor }}
+          rootfs_artifact_name: ${{ needs.rootfs.outputs.artifact_name }}
+          kernel_artifact_name: ${{ needs.kernel.outputs.artifact_name }}
+          uboot_artifact_name: ${{ needs.uboot.outputs.artifact_name }}
           artifact_retention_days: ${{ github.event.inputs.image_artifact_retention_days }}
           registry_check: "true"
           registry_upload: "true"
