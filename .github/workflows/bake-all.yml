@@ -157,9 +157,7 @@ jobs:
   rootfs:
     if: ${{ github.actor == 'diverger' }}
     needs: matrix
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner)
-      || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner)
-      || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner) || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner) || 'ubuntu-latest' }}
     name: Build rootfs
     strategy:
       fail-fast: false
@@ -205,9 +203,7 @@ jobs:
   kernel:
     if: ${{ github.actor == 'diverger' }}
     needs: matrix
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner)
-      || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner)
-      || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner) || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner) || 'ubuntu-latest' }}
     name: Build kernel
     strategy:
       fail-fast: false
@@ -250,9 +246,7 @@ jobs:
   uboot:
     if: ${{ github.actor == 'diverger' }}
     needs: matrix
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner)
-      || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner)
-      || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner) || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner) || 'ubuntu-latest' }}
     name: Build u-boot
     strategy:
       fail-fast: false
@@ -295,9 +289,7 @@ jobs:
 
   image:
     if: ${{ github.actor == 'diverger' && always() }}
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner)
-      || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner)
-      || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner) || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner) || 'ubuntu-latest' }}
     needs: [matrix, rootfs, kernel, uboot]
     name: Build Ubuntu Rockchip Image
     strategy:
