@@ -73,7 +73,7 @@ env:
   RECIPE_DIR: "."
 
   # Define the boards to build (change this list as needed)
-  BOARDS_TO_BUILD: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.boards_to_build != '' && github.event.inputs.boards_to_build) || (github.event_name == 'repository_dispatch' && github.event.client_payload.boards_to_build) || 'handy-hpd5kx,handy-hpd5kx-aim7,orangepi-5-plus' }}
+  BOARDS_TO_BUILD: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.boards_to_build != '' && github.event.inputs.boards_to_build) || (github.event_name == 'repository_dispatch' && github.event.client_payload.boards_to_build) || 'handy-hpd5kx-aim7' }}
   EFFECTIVE_TRIGGER_SOURCE: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.trigger_source) || github.event_name }}
   EFFECTIVE_BAKER_ARTIFACT_RETENTION_DAYS: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.baker_artifact_retention_days) || (github.event_name == 'repository_dispatch' && github.event.client_payload.baker_artifact_retention_days) || 1 }}
   EFFECTIVE_IMAGE_ARTIFACT_RETENTION_DAYS: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.image_artifact_retention_days) || (github.event_name == 'repository_dispatch' && github.event.client_payload.image_artifact_retention_days) || 90 }}
@@ -298,7 +298,7 @@ jobs:
     name: Build Ubuntu Rockchip Image
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.matrix.outputs.image-matrix) }}
+      matrix: ${{ fromJson(needs.matrix.outputs.image-matrix || '[]') }}
 
     steps:
       - name: Show trigger source
