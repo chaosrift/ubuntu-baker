@@ -121,22 +121,22 @@ jobs:
 
           echo "Generating rootfs matrix..."
           rootfs_matrix=$(scripts/ci/generate-build-matrix.sh --boards "${{ env.BOARDS_TO_BUILD }}" --type rootfs --output json --os-version "${{ env.EFFECTIVE_OS_VERSION }}")
-          echo "rootfs-matrix=$rootfs_matrix" >> $GITHUB_OUTPUT
+          echo "rootfs_matrix=$rootfs_matrix" >> $GITHUB_OUTPUT
           echo "Rootfs matrix: $rootfs_matrix"
 
           echo "Generating kernel matrix..."
           kernel_matrix=$(scripts/ci/generate-build-matrix.sh --boards "${{ env.BOARDS_TO_BUILD }}" --type kernel --output json --os-version "${{ env.EFFECTIVE_OS_VERSION }}")
-          echo "kernel-matrix=$kernel_matrix" >> $GITHUB_OUTPUT
+          echo "kernel_matrix=$kernel_matrix" >> $GITHUB_OUTPUT
           echo "Kernel matrix: $kernel_matrix"
 
           echo "Generating uboot matrix..."
           uboot_matrix=$(scripts/ci/generate-build-matrix.sh --boards "${{ env.BOARDS_TO_BUILD }}" --type uboot --output json --os-version "${{ env.EFFECTIVE_OS_VERSION }}")
-          echo "uboot-matrix=$uboot_matrix" >> $GITHUB_OUTPUT
+          echo "uboot_matrix=$uboot_matrix" >> $GITHUB_OUTPUT
           echo "Uboot matrix: $uboot_matrix"
 
           echo "Generating image matrix..."
           image_matrix=$(scripts/ci/generate-build-matrix.sh --boards "${{ env.BOARDS_TO_BUILD }}" --type image --output json --os-version "${{ env.EFFECTIVE_OS_VERSION }}")
-          echo "image-matrix=$image_matrix" >> $GITHUB_OUTPUT
+          echo "image_matrix=$image_matrix" >> $GITHUB_OUTPUT
           echo "Image matrix: $image_matrix"
 
       - name: Show matrix summary
