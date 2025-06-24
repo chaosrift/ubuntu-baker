@@ -67,12 +67,6 @@ on:
         type: string
         default: ''
 
-      os_version:
-        description: 'OS version for build matrix (e.g. ubuntu-24.04)'
-        required: false
-        type: string
-        default: 'ubuntu-24.04'
-
 env:
   RECIPE_REP: "diverger/ubuntu-rockchip"
   RECIPE_REF: "diverger"
@@ -86,12 +80,11 @@ env:
   EFFECTIVE_RELEASE_ID: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.release_id) || (github.event_name == 'repository_dispatch' && github.event.client_payload.release_id) || '' }}
   EFFECTIVE_RELEASE_TAG: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag) || (github.event_name == 'repository_dispatch' && github.event.client_payload.release_tag) || '' }}
   EFFECTIVE_RUNNER: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner) || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner) || 'ubuntu-latest' }}
-  EFFECTIVE_OS_VERSION: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.os_version) || (github.event_name == 'repository_dispatch' && github.event.client_payload.os_version) || 'ubuntu-24.04' }}
 
 jobs:
   matrix:
     if: ${{ github.actor == 'diverger' }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner) || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner) || 'ubuntu-latest' }}
     name: Generate Build Matrices
     outputs:
       rootfs_matrix: ${{ steps.matrices.outputs.rootfs_matrix }}
@@ -112,30 +105,36 @@ jobs:
 
       - name: Generate build matrices
         id: matrices
+        env:
+          BOARDS_TO_BUILD: ${{ env.BOARDS_TO_BUILD }}
+          RECIPE_DIR: ${{ env.RECIPE_DIR }}
         run: |
-          cd ${{ env.RECIPE_DIR }}
+          cd "$RECIPE_DIR"
           chmod +x scripts/ci/generate-build-matrix.sh
 
-          echo "🎯 Building for boards: ${{ env.BOARDS_TO_BUILD }}"
-          echo "Using OS version: ${{ env.EFFECTIVE_OS_VERSION }}"
+          # Always detect OS version from runner
+          OS_VERSION="$(lsb_release -is | tr '[:upper:]' '[:lower:]')-$(lsb_release -rs)"
+
+          echo "🎯 Building for boards: $BOARDS_TO_BUILD"
+          echo "Using OS version: $OS_VERSION"
 
           echo "Generating rootfs matrix..."
-          rootfs_matrix=$(scripts/ci/generate-build-matrix.sh --boards "${{ env.BOARDS_TO_BUILD }}" --type rootfs --output json --os-version "${{ env.EFFECTIVE_OS_VERSION }}")
+          rootfs_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type rootfs --output json --os-version "$OS_VERSION")
           echo "rootfs_matrix=$rootfs_matrix" >> $GITHUB_OUTPUT
           echo "Rootfs matrix: $rootfs_matrix"
 
           echo "Generating kernel matrix..."
-          kernel_matrix=$(scripts/ci/generate-build-matrix.sh --boards "${{ env.BOARDS_TO_BUILD }}" --type kernel --output json --os-version "${{ env.EFFECTIVE_OS_VERSION }}")
+          kernel_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type kernel --output json --os-version "$OS_VERSION")
           echo "kernel_matrix=$kernel_matrix" >> $GITHUB_OUTPUT
           echo "Kernel matrix: $kernel_matrix"
 
           echo "Generating uboot matrix..."
-          uboot_matrix=$(scripts/ci/generate-build-matrix.sh --boards "${{ env.BOARDS_TO_BUILD }}" --type uboot --output json --os-version "${{ env.EFFECTIVE_OS_VERSION }}")
+          uboot_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type uboot --output json --os-version "$OS_VERSION")
           echo "uboot_matrix=$uboot_matrix" >> $GITHUB_OUTPUT
           echo "Uboot matrix: $uboot_matrix"
 
           echo "Generating image matrix..."
-          image_matrix=$(scripts/ci/generate-build-matrix.sh --boards "${{ env.BOARDS_TO_BUILD }}" --type image --output json --os-version "${{ env.EFFECTIVE_OS_VERSION }}")
+          image_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type image --output json --os-version "$OS_VERSION")
           echo "image_matrix=$image_matrix" >> $GITHUB_OUTPUT
           echo "Image matrix: $image_matrix"
 
@@ -350,7 +349,3 @@ jobs:
           echo "Expire date: $expire_date"
           echo "expire_date=$expire_date" >> $GITHUB_OUTPUT
           echo "📅 Artifact Expire Date: $expire_date" >> $GITHUB_STEP_SUMMARY
-
-# NOTE: Your matrix generator script (scripts/ci/generate-build-matrix.sh) must output each matrix as a JSON object with an 'include' key, e.g.:
-# echo "rootfs_matrix={\"include\":$rootfs_matrix}" >> $GITHUB_OUTPUT
-# where $rootfs_matrix is a JSON array. Do this for all matrix types.
