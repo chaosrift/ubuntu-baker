@@ -21,7 +21,7 @@ run-name: >
 
 on:
   repository_dispatch:
-    types: [build-trigger]
+    types: [build-all-trigger]
 
   workflow_dispatch:
     inputs:

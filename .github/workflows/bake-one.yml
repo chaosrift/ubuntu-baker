@@ -59,6 +59,9 @@ on:
         type: number
         default: 90
 
+  repository_dispatch:
+    types: [build-one-trigger]
+
 env:
   RECIPE_REP: "diverger/ubuntu-rockchip"
   RECIPE_REF: "diverger"
@@ -67,7 +70,7 @@ env:
 jobs:
   rootfs:
     if: ${{ github.actor == 'diverger' }}
-    runs-on: ${{ github.event.inputs.runner }}
+    runs-on: ${{ github.event.inputs.runner || github.event.client_payload.runner || 'ubuntu-latest' }}
     name: Build rootfs
     outputs:
       artifact_name: ${{ steps.rootfs_baker_step.outputs.artifact_name }}
@@ -126,7 +129,7 @@ jobs:
 
   kernel:
     if: ${{ github.actor == 'diverger' }}
-    runs-on: ${{ github.event.inputs.runner }}
+    runs-on: ${{ github.event.inputs.runner || github.event.client_payload.runner || 'ubuntu-latest' }}
     name: Build kernel
     outputs:
       artifact_name: ${{ steps.kernel_baker_step.outputs.artifact_name }}
@@ -167,7 +170,7 @@ jobs:
 
   uboot:
     if: ${{ github.actor == 'diverger' }}
-    runs-on: ${{ github.event.inputs.runner }}
+    runs-on: ${{ github.event.inputs.runner || github.event.client_payload.runner || 'ubuntu-latest' }}
     name: Build uboot
     outputs:
       artifact_name: ${{ steps.uboot_baker_step.outputs.artifact_name }}
@@ -208,7 +211,7 @@ jobs:
 
   image:
     if: ${{ github.actor == 'diverger' }}
-    runs-on: ${{ github.event.inputs.runner }}
+    runs-on: ${{ github.event.inputs.runner || github.event.client_payload.runner || 'ubuntu-latest' }}
     needs: [rootfs, kernel, uboot]
     name: Build Ubuntu Rockchip Image
 
