@@ -94,10 +94,10 @@ jobs:
     runs-on: ubuntu-latest
     name: Generate Build Matrices
     outputs:
-      rootfs-matrix: ${{ steps.matrices.outputs.rootfs-matrix }}
-      kernel-matrix: ${{ steps.matrices.outputs.kernel-matrix }}
-      uboot-matrix: ${{ steps.matrices.outputs.uboot-matrix }}
-      image-matrix: ${{ steps.matrices.outputs.image-matrix }}
+      rootfs_matrix: ${{ steps.matrices.outputs.rootfs_matrix }}
+      kernel_matrix: ${{ steps.matrices.outputs.kernel_matrix }}
+      uboot_matrix: ${{ steps.matrices.outputs.uboot_matrix }}
+      image_matrix: ${{ steps.matrices.outputs.image_matrix }}
     steps:
       - name: Checkout private repository
         uses: actions/checkout@v4
@@ -161,7 +161,7 @@ jobs:
     name: Build rootfs
     strategy:
       fail-fast: false
-      matrix: ${{ needs.matrix.outputs.rootfs-matrix && fromJson(needs.matrix.outputs.rootfs-matrix) || fromJson('[]') }}
+      matrix: ${{ needs.matrix.outputs.rootfs_matrix && fromJson(needs.matrix.outputs.rootfs_matrix) || fromJson('[]') }}
 
     steps:
       - name: Show trigger source
@@ -207,7 +207,7 @@ jobs:
     name: Build kernel
     strategy:
       fail-fast: false
-      matrix: ${{ needs.matrix.outputs.kernel-matrix && fromJson(needs.matrix.outputs.kernel-matrix) || fromJson('[]') }}
+      matrix: ${{ needs.matrix.outputs.kernel_matrix && fromJson(needs.matrix.outputs.kernel_matrix) || fromJson('[]') }}
 
     steps:
       - name: Show trigger source
@@ -250,7 +250,7 @@ jobs:
     name: Build u-boot
     strategy:
       fail-fast: false
-      matrix: ${{ needs.matrix.outputs.uboot-matrix && fromJson(needs.matrix.outputs.uboot-matrix) || fromJson('[]') }}
+      matrix: ${{ needs.matrix.outputs.uboot_matrix && fromJson(needs.matrix.outputs.uboot_matrix) || fromJson('[]') }}
 
     steps:
       - name: Show trigger source
@@ -294,7 +294,7 @@ jobs:
     name: Build Ubuntu Rockchip Image
     strategy:
       fail-fast: false
-      matrix: ${{ needs.matrix.outputs.image-matrix && fromJson(needs.matrix.outputs.image-matrix) || fromJson('[]') }}
+      matrix: ${{ needs.matrix.outputs.image_matrix && fromJson(needs.matrix.outputs.image_matrix) || fromJson('[]') }}
 
     steps:
       - name: Show trigger source
