@@ -354,15 +354,3 @@ jobs:
           echo "Expire date: $expire_date"
           echo "expire_date=$expire_date" >> $GITHUB_OUTPUT
           echo "📅 Artifact Expire Date: $expire_date" >> $GITHUB_STEP_SUMMARY
-        run: |
-          expire_date=$(date -u -d "+${{ env.EFFECTIVE_IMAGE_ARTIFACT_RETENTION_DAYS }} days" +"%Y-%m-%d")
-          echo "Expire date: $expire_date"
-          echo "expire_date=$expire_date" >> $GITHUB_OUTPUT
-          echo "📅 Artifact Expire Date: $expire_date" >> $GITHUB_STEP_SUMMARY
-          echo "expire_date=$expire_date" >> $GITHUB_OUTPUT
-          echo "📅 Artifact Expire Date: $expire_date" >> $GITHUB_STEP_SUMMARY
-        run: |
-          expire_date=$(date -u -d "+${{ env.EFFECTIVE_IMAGE_ARTIFACT_RETENTION_DAYS }} days" +"%Y-%m-%d")
-          echo "Expire date: $expire_date"
-          echo "expire_date=$expire_date" >> $GITHUB_OUTPUT
-          echo "📅 Artifact Expire Date: $expire_date" >> $GITHUB_STEP_SUMMARY
