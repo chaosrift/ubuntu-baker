@@ -161,7 +161,7 @@ jobs:
     name: Build rootfs
     strategy:
       fail-fast: false
-      matrix: ${{ needs.matrix.outputs.rootfs_matrix && fromJson(needs.matrix.outputs.rootfs_matrix) || fromJson('[]') }}
+      matrix: ${{ fromJson(needs.matrix.outputs.rootfs_matrix) }}
 
     steps:
       - name: Show trigger source
@@ -207,7 +207,7 @@ jobs:
     name: Build kernel
     strategy:
       fail-fast: false
-      matrix: ${{ needs.matrix.outputs.kernel_matrix && fromJson(needs.matrix.outputs.kernel_matrix) || fromJson('[]') }}
+      matrix: ${{ fromJson(needs.matrix.outputs.kernel_matrix) }}
 
     steps:
       - name: Show trigger source
@@ -250,7 +250,7 @@ jobs:
     name: Build u-boot
     strategy:
       fail-fast: false
-      matrix: ${{ needs.matrix.outputs.uboot_matrix && fromJson(needs.matrix.outputs.uboot_matrix) || fromJson('[]') }}
+      matrix: ${{ fromJson(needs.matrix.outputs.uboot_matrix) }}
 
     steps:
       - name: Show trigger source
@@ -294,7 +294,7 @@ jobs:
     name: Build Ubuntu Rockchip Image
     strategy:
       fail-fast: false
-      matrix: ${{ needs.matrix.outputs.image_matrix && fromJson(needs.matrix.outputs.image_matrix) || fromJson('[]') }}
+      matrix: ${{ fromJson(needs.matrix.outputs.image_matrix) }}
 
     steps:
       - name: Show trigger source
@@ -350,3 +350,7 @@ jobs:
           echo "Expire date: $expire_date"
           echo "expire_date=$expire_date" >> $GITHUB_OUTPUT
           echo "📅 Artifact Expire Date: $expire_date" >> $GITHUB_STEP_SUMMARY
+
+# NOTE: Your matrix generator script (scripts/ci/generate-build-matrix.sh) must output each matrix as a JSON object with an 'include' key, e.g.:
+# echo "rootfs_matrix={\"include\":$rootfs_matrix}" >> $GITHUB_OUTPUT
+# where $rootfs_matrix is a JSON array. Do this for all matrix types.
