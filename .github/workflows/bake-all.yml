@@ -161,7 +161,7 @@ jobs:
     name: Build rootfs
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.matrix.outputs.rootfs-matrix || '[]') }}
+      matrix: ${{ needs.matrix.outputs.rootfs-matrix && fromJson(needs.matrix.outputs.rootfs-matrix) || fromJson('[]') }}
 
     steps:
       - name: Show trigger source
@@ -207,7 +207,7 @@ jobs:
     name: Build kernel
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.matrix.outputs.kernel-matrix || '[]') }}
+      matrix: ${{ needs.matrix.outputs.kernel-matrix && fromJson(needs.matrix.outputs.kernel-matrix) || fromJson('[]') }}
 
     steps:
       - name: Show trigger source
@@ -250,7 +250,7 @@ jobs:
     name: Build u-boot
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.matrix.outputs.uboot-matrix || '[]') }}
+      matrix: ${{ needs.matrix.outputs.uboot-matrix && fromJson(needs.matrix.outputs.uboot-matrix) || fromJson('[]') }}
 
     steps:
       - name: Show trigger source
@@ -294,7 +294,7 @@ jobs:
     name: Build Ubuntu Rockchip Image
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.matrix.outputs.image-matrix || '[]') }}
+      matrix: ${{ needs.matrix.outputs.image-matrix && fromJson(needs.matrix.outputs.image-matrix) || fromJson('[]') }}
 
     steps:
       - name: Show trigger source
