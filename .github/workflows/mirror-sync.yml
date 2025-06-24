@@ -26,7 +26,7 @@ env:
 
 jobs:
   sync-repository:
-    if: ${{ github.repository_owner == 'diverger' }}
+    if: ${{ github.actor == 'diverger' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source

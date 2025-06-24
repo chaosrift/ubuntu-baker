@@ -64,7 +64,7 @@ env:
 
 jobs:
   rootfs:
-    if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
+    if: ${{ github.actor == 'diverger' }}
     runs-on: ${{ github.event.inputs.runner }}
     name: Build rootfs
     outputs:
@@ -123,7 +123,7 @@ jobs:
           artifact_retention_days: ${{ format('{0}',  github.event.inputs.baker_artifact_retention_days) }}
 
   kernel:
-    if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
+    if: ${{ github.actor == 'diverger' }}
     runs-on: ${{ github.event.inputs.runner }}
     name: Build kernel
     outputs:
@@ -164,7 +164,7 @@ jobs:
           artifact_retention_days: ${{ format('{0}',  github.event.inputs.baker_artifact_retention_days) }}
 
   uboot:
-    if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
+    if: ${{ github.actor == 'diverger' }}
     runs-on: ${{ github.event.inputs.runner }}
     name: Build uboot
     outputs:
@@ -205,7 +205,7 @@ jobs:
           artifact_retention_days: ${{ format('{0}',  github.event.inputs.baker_artifact_retention_days) }}
 
   image:
-    if: ${{ github.repository_owner == 'diverger' && github.actor == 'diverger' }}
+    if: ${{ github.actor == 'diverger' }}
     runs-on: ${{ github.event.inputs.runner }}
     needs: [rootfs, kernel, uboot]
     name: Build Ubuntu Rockchip Image
