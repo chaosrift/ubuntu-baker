@@ -34,7 +34,9 @@ on:
           - ubuntu-latest
           - ubuntu-24.04
           - ubuntu-22.04
-
+          - github-linux64-ubuntu-latest-8core  # Large GitHub-hosted runner
+          - github-arm64-ubuntu-24.04-8core  # ARM64 self-hosted runner
+          
       boards_to_build:
         description: 'Comma-separated list of boards to build (leave empty to use default)'
         required: false
