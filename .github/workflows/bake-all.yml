@@ -161,7 +161,7 @@ jobs:
     name: Build rootfs
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.matrix.outputs.rootfs-matrix) }}
+      matrix: ${{ fromJson(needs.matrix.outputs.rootfs-matrix || '[]') }}
 
     steps:
       - name: Show trigger source
@@ -207,7 +207,7 @@ jobs:
     name: Build kernel
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.matrix.outputs.kernel-matrix) }}
+      matrix: ${{ fromJson(needs.matrix.outputs.kernel-matrix || '[]') }}
 
     steps:
       - name: Show trigger source
@@ -250,7 +250,7 @@ jobs:
     name: Build u-boot
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.matrix.outputs.uboot-matrix) }}
+      matrix: ${{ fromJson(needs.matrix.outputs.uboot-matrix || '[]') }}
 
     steps:
       - name: Show trigger source
