@@ -67,7 +67,7 @@ env:
   ARTIFACT_RETENTION_DAYS: ${{ github.event.inputs.artifact_retention_days || github.event.client_payload.artifact_retention_days || 1 }}
   REGISTRY_TYPE: ${{ github.event.inputs.registry_type || github.event.client_payload.registry_type || 'ghcr' }}
   REGISTRY_SERVER: ${{ github.event.inputs.registry_server || github.event.client_payload.registry_server || secrets.ACR_SERVERID }}
-  REGISTRY_NAMESPACE: ${{ github.event.inputs.registry_namespace || github.event.client_payload.registry_namespace || format('{0}/{1}', github.actor, github.event.repository.name) }}
+  REGISTRY_NAMESPACE: ${{ github.event.inputs.registry_namespace || github.event.client_payload.registry_namespace || github.repository }}
   REGISTRY_USERNAME: ${{ github.event.inputs.registry_username || github.event.client_payload.registry_username }}
   # RUNNER is not needed in env, use input directly in runs-on
 
