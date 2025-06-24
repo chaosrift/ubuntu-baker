@@ -46,7 +46,7 @@ on:
           - ubuntu-22.04
           - github-linux64-ubuntu-latest-8core  # Large GitHub-hosted runner
           - github-arm64-ubuntu-24.04-8core  # ARM64 self-hosted runner
-          
+
       baker_artifact_retention_days:
         description: 'Retention days for baker artifacts'
         required: false
@@ -251,10 +251,6 @@ jobs:
           kernel_artifact_name: ${{ needs.kernel.outputs.artifact_name }}
           uboot_artifact_name: ${{ needs.uboot.outputs.artifact_name }}
           artifact_retention_days: ${{ github.event.inputs.image_artifact_retention_days }}
-          registry_check: "true"
-          registry_upload: "true"
-          registry_token: ${{ secrets.GH_ACCESS_TOKEN }}
-          registry_namespace: ${{ github.repository }}
 
       - name: Calculate expire date
         if: ${{ success() && steps.image_build_step.outcome == 'success' }}
