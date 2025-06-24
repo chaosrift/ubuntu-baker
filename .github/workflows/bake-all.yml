@@ -36,7 +36,7 @@ on:
           - ubuntu-22.04
           - github-linux64-ubuntu-latest-8core  # Large GitHub-hosted runner
           - github-arm64-ubuntu-24.04-8core  # ARM64 self-hosted runner
-          
+
       boards_to_build:
         description: 'Comma-separated list of boards to build (leave empty to use default)'
         required: false
@@ -68,8 +68,10 @@ on:
         default: ''
 
 env:
-  RECIPE_REPO: "diverger/ubuntu-rockchip"
-  RECIPE_PATH: "."
+  RECIPE_REP: "diverger/ubuntu-rockchip"
+  RECIPE_REF: "diverger"
+  RECIPE_DIR: "."
+
   # Define the boards to build (change this list as needed)
   BOARDS_TO_BUILD: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.boards_to_build != '' && github.event.inputs.boards_to_build) || (github.event_name == 'repository_dispatch' && github.event.client_payload.boards_to_build) || 'handy-hpd5kx,handy-hpd5kx-aim7,orangepi-5-plus' }}
   EFFECTIVE_TRIGGER_SOURCE: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.trigger_source) || github.event_name }}
@@ -93,9 +95,10 @@ jobs:
       - name: Checkout private repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ env.RECIPE_REPO }}
+          repository: ${{ env.RECIPE_REP }}
+          ref: ${{ env.RECIPE_REF }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
-          path: ${{ env.RECIPE_PATH }}
+          path: ${{ env.RECIPE_DIR }}
           clean: false
           fetch-depth: 1
           lfs: true
@@ -103,7 +106,7 @@ jobs:
       - name: Generate build matrices
         id: matrices
         run: |
-          cd ${{ env.RECIPE_PATH }}
+          cd ${{ env.RECIPE_DIR }}
           chmod +x scripts/ci/generate-build-matrix.sh
 
           echo "🎯 Building for boards: ${{ env.BOARDS_TO_BUILD }}"
@@ -174,9 +177,10 @@ jobs:
       - name: Checkout private repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ env.RECIPE_REPO }}
+          repository: ${{ env.RECIPE_REP }}
+          ref: ${{ env.RECIPE_REF }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
-          path: ${{ env.RECIPE_PATH }}
+          path: ${{ env.RECIPE_DIR }}
           clean: false
           fetch-depth: 1
           lfs: true
@@ -222,9 +226,10 @@ jobs:
       - name: Checkout private repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ env.RECIPE_REPO }}
+          repository: ${{ env.RECIPE_REP }}
+          ref: ${{ env.RECIPE_REF }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
-          path: ${{ env.RECIPE_PATH }}
+          path: ${{ env.RECIPE_DIR }}
           clean: false
           fetch-depth: 1
           lfs: true
@@ -267,9 +272,10 @@ jobs:
       - name: Checkout private repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ env.RECIPE_REPO }}
+          repository: ${{ env.RECIPE_REP }}
+          ref: ${{ env.RECIPE_REF }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
-          path: ${{ env.RECIPE_PATH }}
+          path: ${{ env.RECIPE_DIR }}
           clean: false
           fetch-depth: 1
           lfs: true
@@ -313,9 +319,10 @@ jobs:
       - name: Checkout private repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ env.RECIPE_REPO }}
+          repository: ${{ env.RECIPE_REP }}
+          ref: ${{ env.RECIPE_REF }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
-          path: ${{ env.RECIPE_PATH }}
+          path: ${{ env.RECIPE_DIR }}
           clean: false
           fetch-depth: 1
           lfs: true
