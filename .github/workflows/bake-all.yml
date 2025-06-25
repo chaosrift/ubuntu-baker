@@ -21,12 +21,12 @@ run-name: >
 
 on:
   repository_dispatch:
-    types: [build-all-trigger]
+    types: [event-bake-all]
 
   workflow_dispatch:
     inputs:
       runner:
-        description: 'Specify the runner label (e.g., ubuntu-latest, windows-latest, self-hosted-runner).'
+        description: 'Specify the runner (e.g., ubuntu-latest, windows-latest, self-hosted-runner).'
         required: false
         type: choice
         default: 'ubuntu-latest'
@@ -54,12 +54,6 @@ on:
         required: false
         type: number
         default: 90
-
-      release_id:
-        description: 'Release ID for the image'
-        required: false
-        type: string
-        default: ''
 
       release_tag:
         description: 'Release tag for the image'
@@ -394,7 +388,6 @@ jobs:
           rootfs_artifact_name: ${{ matrix.rootfs_artifact_name || '' }}
           kernel_artifact_name: ${{ matrix.kernel_artifact_name || '' }}
           uboot_artifact_name: ${{ matrix.uboot_artifact_name || '' }}
-          release_id: ${{ env.EFFECTIVE_RELEASE_ID }}
           release_tag: ${{ env.EFFECTIVE_RELEASE_TAG }}
           artifact_retention_days: ${{ env.EFFECTIVE_IMAGE_ARTIFACT_RETENTION_DAYS }}
           oss_key_id: ${{ secrets.OSS_ACCESS_KEY }}
