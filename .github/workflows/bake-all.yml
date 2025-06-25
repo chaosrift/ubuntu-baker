@@ -70,7 +70,6 @@ on:
           - 'ghcr'
           - 'acr'
           - 'none'
-
       registry_server:
         description: 'Registry server URL (auto-detected if empty)'
         required: false
@@ -99,9 +98,9 @@ env:
   EFFECTIVE_RELEASE_TAG: ${{ github.event.inputs.release_tag || github.event.client_payload.release_tag || '' }}
   EFFECTIVE_RUNNER: ${{ github.event.inputs.runner || github.event.client_payload.runner || 'ubuntu-latest' }}
   REGISTRY_TYPE: ${{ github.event.inputs.registry_type || github.event.client_payload.registry_type || 'ghcr' }}
-  REGISTRY_SERVER: ${{ github.event.inputs.registry_server || github.event.client_payload.registry_server || '' }}
-  REGISTRY_NAMESPACE: ${{ github.event.inputs.registry_namespace || github.event.client_payload.registry_namespace || '' }}
-  REGISTRY_USERNAME: ${{ github.event.inputs.registry_username || github.event.client_payload.registry_username || '' }}
+  REGISTRY_SERVER: ${{ github.event.inputs.registry_server || github.event.client_payload.registry_server || 'ghcr.io' }}
+  REGISTRY_NAMESPACE: ${{ github.event.inputs.registry_namespace || github.event.client_payload.registry_namespace || github.repository }}
+  REGISTRY_USERNAME: ${{ github.event.inputs.registry_username || github.event.client_payload.registry_username || github.actor }}
 
 jobs:
   matrix:
@@ -141,22 +140,22 @@ jobs:
           echo "Using OS version: $OS_VERSION"
 
           echo "Generating rootfs matrix..."
-          rootfs_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type rootfs --output json --os-version "$OS_VERSION")
+          rootfs_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type rootfs --output json --os-version "$OS_VERSION" --registry-url "$REGISTRY_SERVER" --namespace "$REGISTRY_NAMESPACE")
           echo "rootfs_matrix=$rootfs_matrix" >> $GITHUB_OUTPUT
           echo "Rootfs matrix: $rootfs_matrix"
 
           echo "Generating kernel matrix..."
-          kernel_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type kernel --output json --os-version "$OS_VERSION")
+          kernel_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type kernel --output json --os-version "$OS_VERSION" --registry-url "$REGISTRY_SERVER" --namespace "$REGISTRY_NAMESPACE")
           echo "kernel_matrix=$kernel_matrix" >> $GITHUB_OUTPUT
           echo "Kernel matrix: $kernel_matrix"
 
           echo "Generating uboot matrix..."
-          uboot_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type uboot --output json --os-version "$OS_VERSION")
+          uboot_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type uboot --output json --os-version "$OS_VERSION" --registry-url "$REGISTRY_SERVER" --namespace "$REGISTRY_NAMESPACE")
           echo "uboot_matrix=$uboot_matrix" >> $GITHUB_OUTPUT
           echo "Uboot matrix: $uboot_matrix"
 
           echo "Generating image matrix..."
-          image_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type image --output json --os-version "$OS_VERSION")
+          image_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type image --output json --os-version "$OS_VERSION" --registry-url "$REGISTRY_SERVER" --namespace "$REGISTRY_NAMESPACE")
           echo "image_matrix=$image_matrix" >> $GITHUB_OUTPUT
           echo "Image matrix: $image_matrix"
 
@@ -165,10 +164,10 @@ jobs:
           echo "### 📊 Build Matrix Summary" >> $GITHUB_STEP_SUMMARY
           echo "| Matrix Type | Count |" >> $GITHUB_STEP_SUMMARY
           echo "|-------------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Rootfs | $(echo \"${{ steps.matrices.outputs.rootfs_matrix }}\" | jq '.include | length') |" >> $GITHUB_STEP_SUMMARY
-          echo "| Kernel | $(echo \"${{ steps.matrices.outputs.kernel_matrix }}\" | jq '.include | length') |" >> $GITHUB_STEP_SUMMARY
-          echo "| U-Boot | $(echo \"${{ steps.matrices.outputs.uboot_matrix }}\" | jq '.include | length') |" >> $GITHUB_STEP_SUMMARY
-          echo "| Images | $(echo \"${{ steps.matrices.outputs.image_matrix }}\" | jq '.include | length') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Rootfs | ${{ steps.matrices.outputs.rootfs_matrix && length(fromJson(steps.matrices.outputs.rootfs_matrix).include) || 0 }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Kernel | ${{ steps.matrices.outputs.kernel_matrix && length(fromJson(steps.matrices.outputs.kernel_matrix).include) || 0 }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| U-Boot | ${{ steps.matrices.outputs.uboot_matrix && length(fromJson(steps.matrices.outputs.uboot_matrix).include) || 0 }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Images | ${{ steps.matrices.outputs.image_matrix && length(fromJson(steps.matrices.outputs.image_matrix).include) || 0 }} |" >> $GITHUB_STEP_SUMMARY
           # echo "" >> $GITHUB_STEP_SUMMARY
           # echo "### 🚀 U-Boot Deduplication Details" >> $GITHUB_STEP_SUMMARY
           # echo '```json' >> $GITHUB_STEP_SUMMARY
