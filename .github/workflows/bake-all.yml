@@ -67,6 +67,31 @@ on:
         type: string
         default: ''
 
+      registry_type:
+        description: 'Container registry to use'
+        required: false
+        default: 'ghcr'
+        type: choice
+        options:
+          - 'ghcr'
+          - 'acr'
+          - 'none'
+
+      registry_server:
+        description: 'Registry server URL (auto-detected if empty)'
+        required: false
+        type: string
+
+      registry_namespace:
+        description: 'Registry namespace (auto-detected if empty)'
+        required: false
+        type: string
+
+      registry_username:
+        description: 'Registry username (auto-detected if empty)'
+        required: false
+        type: string
+
 env:
   RECIPE_REP: "diverger/ubuntu-rockchip"
   RECIPE_REF: "diverger"
@@ -80,6 +105,10 @@ env:
   EFFECTIVE_RELEASE_ID: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.release_id) || (github.event_name == 'repository_dispatch' && github.event.client_payload.release_id) || '' }}
   EFFECTIVE_RELEASE_TAG: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag) || (github.event_name == 'repository_dispatch' && github.event.client_payload.release_tag) || '' }}
   EFFECTIVE_RUNNER: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner) || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner) || 'ubuntu-latest' }}
+  REGISTRY_TYPE: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.registry_type) || (github.event_name == 'repository_dispatch' && github.event.client_payload.registry_type) || 'ghcr' }}
+  REGISTRY_SERVER: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.registry_server) || (github.event_name == 'repository_dispatch' && github.event.client_payload.registry_server) || '' }}
+  REGISTRY_NAMESPACE: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.registry_namespace) || (github.event_name == 'repository_dispatch' && github.event.client_payload.registry_namespace) || '' }}
+  REGISTRY_USERNAME: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.registry_username) || (github.event_name == 'repository_dispatch' && github.event.client_payload.registry_username) || '' }}
 
 jobs:
   matrix:
@@ -210,6 +239,12 @@ jobs:
           variant: ${{ matrix.variant }}
           repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
           artifact_retention_days: ${{ format('{0}', env.EFFECTIVE_BAKER_ARTIFACT_RETENTION_DAYS) }}
+          registry_upload: ${{ env.REGISTRY_TYPE != 'none' }}
+          registry_check: ${{ env.REGISTRY_TYPE != 'none' }}
+          registry_url: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_SERVERID || 'ghcr.io' }}
+          registry_namespace: ${{ env.REGISTRY_NAMESPACE }}
+          registry_username: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_USERNAME || github.actor }}
+          registry_token: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_PASSWORD || secrets.GH_ACCESS_TOKEN }}
 
   kernel:
     if: ${{ github.actor == 'diverger' }}
@@ -253,6 +288,12 @@ jobs:
         with:
           repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
           artifact_retention_days: ${{ format('{0}', env.EFFECTIVE_BAKER_ARTIFACT_RETENTION_DAYS) }}
+          registry_upload: ${{ env.REGISTRY_TYPE != 'none' }}
+          registry_check: ${{ env.REGISTRY_TYPE != 'none' }}
+          registry_url: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_SERVERID || 'ghcr.io' }}
+          registry_namespace: ${{ env.REGISTRY_NAMESPACE }}
+          registry_username: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_USERNAME || github.actor }}
+          registry_token: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_PASSWORD || secrets.GH_ACCESS_TOKEN }}
 
   uboot:
     if: ${{ github.actor == 'diverger' }}
@@ -297,6 +338,12 @@ jobs:
           board: ${{ matrix.representative_board }}
           repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
           artifact_retention_days: ${{ format('{0}', env.EFFECTIVE_BAKER_ARTIFACT_RETENTION_DAYS) }}
+          registry_upload: ${{ env.REGISTRY_TYPE != 'none' }}
+          registry_check: ${{ env.REGISTRY_TYPE != 'none' }}
+          registry_url: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_SERVERID || 'ghcr.io' }}
+          registry_namespace: ${{ env.REGISTRY_NAMESPACE }}
+          registry_username: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_USERNAME || github.actor }}
+          registry_token: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_PASSWORD || secrets.GH_ACCESS_TOKEN }}
 
   image:
     if: ${{ github.actor == 'diverger' && always() }}
