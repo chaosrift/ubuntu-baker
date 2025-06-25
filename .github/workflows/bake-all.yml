@@ -383,7 +383,6 @@ jobs:
           board: ${{ matrix.board }}
           suite: ${{ matrix.suite }}
           flavor: ${{ matrix.flavor }}
-          variant: ${{ matrix.variant }}
           rootfs_artifact_name: ${{ matrix.rootfs_artifact_name || '' }}
           kernel_artifact_name: ${{ matrix.kernel_artifact_name || '' }}
           uboot_artifact_name: ${{ matrix.uboot_artifact_name || '' }}
