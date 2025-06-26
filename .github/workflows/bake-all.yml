@@ -47,7 +47,7 @@ on:
         description: 'Retention days for baker artifacts'
         required: false
         type: number
-        default: 1
+        default: 90
 
       image_artifact_retention_days:
         description: 'Retention days for artifacts downloaded from bakers and the final image'
@@ -70,6 +70,7 @@ on:
           - 'ghcr'
           - 'acr'
           - 'none'
+
       registry_server:
         description: 'Registry server URL (auto-detected if empty)'
         required: false
@@ -85,9 +86,21 @@ on:
         required: false
         type: string
 
+      build_ref:
+        description: 'Git ref (branch, tag, or SHA) to checkout for build repository'
+        required: false
+        default: 'main'
+        type: string
+
+      build_rep:
+        description: 'GitHub repository (owner/repo) to checkout for build repository'
+        required: false
+        default: 'diverger/ubuntu-rockchip'
+        type: string
+
 env:
-  RECIPE_REP: "diverger/ubuntu-rockchip"
-  RECIPE_REF: "diverger"
+  RECIPE_REP: ${{ github.event.inputs.build_rep || github.event.client_payload.build_rep || 'diverger/ubuntu-rockchip' }}
+  RECIPE_REF: ${{ github.event.inputs.build_ref || github.event.client_payload.build_ref || 'diverger' }}
   RECIPE_DIR: "."
 
   # Define the boards to build (change this list as needed)
