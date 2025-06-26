@@ -346,7 +346,7 @@ jobs:
           registry_token: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_PASSWORD || secrets.GH_ACCESS_TOKEN }}
 
   image:
-    if: ${{ github.actor == 'diverger' && always() }}
+    if: ${{ github.actor == 'diverger' && success() }}
     runs-on: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner) || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner) || 'ubuntu-latest' }}
     needs: [matrix, rootfs, kernel, uboot]
     name: Build Ubuntu Rockchip Image
