@@ -71,10 +71,11 @@ env:
   REGISTRY_USERNAME: ${{ github.event.inputs.registry_username || github.event.client_payload.registry_username }}
 
 jobs:
+
   build:
     if: ${{ github.actor == 'diverger' }}
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.inputs.runner || github.event.client_payload.runner || 'ubuntu-latest' }}
     name: Build u-boot
 
     steps:
