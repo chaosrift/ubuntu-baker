@@ -63,6 +63,18 @@ on:
         required: false
         type: string
 
+      build_ref:
+        description: 'Git ref (branch, tag, or SHA) to checkout for build repository'
+        required: false
+        default: 'main'
+        type: string
+
+      build_rep:
+        description: 'GitHub repository (owner/repo) to checkout for build repository'
+        required: false
+        default: 'diverger/ubuntu-rockchip'
+        type: string
+
       runner:
         description: 'GitHub Actions runner label (e.g., ubuntu-latest, self-hosted)'
         required: false
@@ -80,8 +92,8 @@ on:
       - event-rootfs-bake
 
 env:
-  RECIPE_REP: "diverger/ubuntu-rockchip"
-  RECIPE_REF: "diverger"
+  RECIPE_REP: ${{ github.event.inputs.build_rep || github.event.client_payload.build_rep || 'diverger/ubuntu-rockchip' }}
+  RECIPE_REF: ${{ github.event.inputs.build_ref || github.event.client_payload.build_ref || 'diverger' }}
   RECIPE_DIR: "."
   # Handle inputs from both workflow_dispatch and repository_dispatch
   VARIANT: ${{ github.event.inputs.variant || github.event.client_payload.variant || 'direct' }}
