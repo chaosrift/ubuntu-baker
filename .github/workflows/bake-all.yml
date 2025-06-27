@@ -87,7 +87,7 @@ on:
         type: string
 
 env:
-  RECIPE_REP: ${{ github.event.client_payload.sender_repo || 'diverger/ubuntu-rockchip' }}
+  RECIPE_REP: 'diverger/ubuntu-rockchip'
   RECIPE_REF: ${{ github.event.client_payload.build_ref || 'diverger' }}
   RECIPE_DIR: "."
 
