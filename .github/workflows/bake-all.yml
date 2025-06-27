@@ -88,7 +88,7 @@ on:
 
 env:
   RECIPE_REP: 'diverger/ubuntu-rockchip'
-  RECIPE_REF: ${{ github.event.client_payload.build_ref || 'diverger' }}
+  RECIPE_REF: ${{ github.event.client_payload.build_ref || 'main' }}
   RECIPE_DIR: "."
 
   # Define the boards to build (change this list as needed)
