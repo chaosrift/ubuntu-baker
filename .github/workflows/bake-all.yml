@@ -2,7 +2,7 @@ name: Build All Image in Parallel
 run-name: >
   ${{
     (github.event.inputs.release_tag && format('{0} | ', github.event.inputs.release_tag)) ||
-    (github.event.client_payload.release_tag && format('Tag: {0} | ', github.event.client_payload.release_tag)) ||
+    (github.event.client_payload.release_tag && format('{0} | ', github.event.client_payload.release_tag)) ||
     ''
   }}Build by @${{ github.actor }} [${{
     (github.event_name == 'repository_dispatch' && github.event.client_payload.trigger_source) ||
