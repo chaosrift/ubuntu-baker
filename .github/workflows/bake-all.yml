@@ -403,6 +403,8 @@ jobs:
           artifact_retention_days: ${{ env.EFFECTIVE_IMAGE_ARTIFACT_RETENTION_DAYS }}
           oss_access_key: ${{ secrets.OSS_ACCESS_KEY }}
           oss_secret_key: ${{ secrets.OSS_SECRET_KEY }}
+          baker_repo: ${{ github.repository }}
+          baker_run_id: ${{ github.run_id }}
 
       - name: Calculate expire date
         if: ${{ success() && steps.image_build_step.outcome == 'success' }}
