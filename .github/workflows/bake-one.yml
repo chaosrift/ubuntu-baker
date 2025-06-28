@@ -254,8 +254,8 @@ jobs:
           kernel_artifact_name: ${{ needs.kernel.outputs.artifact_name }}
           uboot_artifact_name: ${{ needs.uboot.outputs.artifact_name }}
           artifact_retention_days: ${{ github.event.inputs.image_artifact_retention_days }}
-          oss_key_id: ${{ secrets.OSS_ACCESS_KEY }}
-          oss_key_secret: ${{ secrets.OSS_SECRET_KEY }}
+          oss_access_key: ${{ secrets.OSS_ACCESS_KEY }}
+          oss_secret_key: ${{ secrets.OSS_SECRET_KEY }}
 
       - name: Calculate expire date
         if: ${{ success() && steps.image_build_step.outcome == 'success' }}

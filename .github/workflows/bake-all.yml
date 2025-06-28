@@ -292,6 +292,7 @@ jobs:
         uses: "./.github/actions/kernel-baker"
         with:
           repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
+          board: ${{ matrix.representative_board }}
           artifact_retention_days: ${{ format('{0}', env.EFFECTIVE_BAKER_ARTIFACT_RETENTION_DAYS) }}
           registry_upload: ${{ env.REGISTRY_TYPE != 'none' }}
           registry_check: ${{ env.REGISTRY_TYPE != 'none' }}
@@ -400,8 +401,8 @@ jobs:
           uboot_artifact_name: ${{ matrix.uboot_artifact_name || '' }}
           release_tag: ${{ env.EFFECTIVE_RELEASE_TAG }}
           artifact_retention_days: ${{ env.EFFECTIVE_IMAGE_ARTIFACT_RETENTION_DAYS }}
-          oss_key_id: ${{ secrets.OSS_ACCESS_KEY }}
-          oss_key_secret: ${{ secrets.OSS_SECRET_KEY }}
+          oss_access_key: ${{ secrets.OSS_ACCESS_KEY }}
+          oss_secret_key: ${{ secrets.OSS_SECRET_KEY }}
 
       - name: Calculate expire date
         if: ${{ success() && steps.image_build_step.outcome == 'success' }}
