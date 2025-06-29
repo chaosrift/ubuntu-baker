@@ -110,8 +110,8 @@ env:
 jobs:
 
   update-release:
+    if: ${{ github.actor == 'diverger' && (github.event.inputs.release_tag || github.event.client_payload.release_tag) }}
     runs-on: ubuntu-latest
-    if: ${{ github.actor == 'diverger' && github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag != '' }}
     name: Update Release Note
     steps:
       - name: Checkout build repository
