@@ -405,6 +405,7 @@ jobs:
           oss_secret_key: ${{ secrets.OSS_SECRET_KEY }}
           baker_repo: ${{ github.repository }}
           baker_run_id: ${{ github.run_id }}
+          image_infos: ${{ toJson(matrix) }}
 
       - name: Calculate expire date
         if: ${{ success() && steps.image_build_step.outcome == 'success' }}
