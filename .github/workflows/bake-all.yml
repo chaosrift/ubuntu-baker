@@ -107,6 +107,10 @@ env:
   REGISTRY_NAMESPACE: ${{ github.event.inputs.registry_namespace || github.event.client_payload.registry_namespace || github.repository }}
   REGISTRY_USERNAME: ${{ github.event.inputs.registry_username || github.event.client_payload.registry_username || github.actor }}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.inputs.release_tag || github.event.client_payload.release_tag || '' }}
+  cancel-in-progress: false
+
 jobs:
 
   update-release:
