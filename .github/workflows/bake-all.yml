@@ -134,7 +134,7 @@ jobs:
           baker_repo: ${{ github.repository }}
 
   matrix:
-    if: ${{ github.actor == 'diverger' }}
+    if: ${{ always() && github.actor == 'diverger' }}
     runs-on: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner) || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner) || 'ubuntu-latest' }}
     needs: update-release
     name: Generate Build Matrices
