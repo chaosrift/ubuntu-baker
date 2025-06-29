@@ -108,9 +108,35 @@ env:
   REGISTRY_USERNAME: ${{ github.event.inputs.registry_username || github.event.client_payload.registry_username || github.actor }}
 
 jobs:
+
+  update-release:
+    runs-on: ubuntu-latest
+    if: ${{ github.actor == 'diverger' && github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag != '' }}
+    name: Update Release Note
+    steps:
+      - name: Checkout build repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.RECIPE_REP }}
+          ref: ${{ env.RECIPE_REF }}
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          path: ${{ env.RECIPE_DIR }}
+          clean: false
+          fetch-depth: 1
+          lfs: true
+
+      - name: Run local build
+        id: image_build_step
+        uses: ./.github/actions/update-release
+        with:
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          release_tag: ${{ env.EFFECTIVE_RELEASE_TAG }}
+          baker_repo: ${{ github.repository }}
+
   matrix:
     if: ${{ github.actor == 'diverger' }}
     runs-on: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner) || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner) || 'ubuntu-latest' }}
+    needs: update-release
     name: Generate Build Matrices
     outputs:
       rootfs_matrix: ${{ steps.matrices.outputs.rootfs_matrix }}
@@ -118,7 +144,7 @@ jobs:
       uboot_matrix: ${{ steps.matrices.outputs.uboot_matrix }}
       image_matrix: ${{ steps.matrices.outputs.image_matrix }}
     steps:
-      - name: Checkout private repository
+      - name: Checkout build repository
         uses: actions/checkout@v4
         with:
           repository: ${{ env.RECIPE_REP }}
@@ -391,8 +417,7 @@ jobs:
         id: image_build_step
         uses: ./.github/actions/image-baker
         with:
-          action_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
-          repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
           board: ${{ matrix.board }}
           suite: ${{ matrix.suite }}
           flavor: ${{ matrix.flavor }}
@@ -404,7 +429,6 @@ jobs:
           oss_access_key: ${{ secrets.OSS_ACCESS_KEY }}
           oss_secret_key: ${{ secrets.OSS_SECRET_KEY }}
           baker_repo: ${{ github.repository }}
-          baker_run_id: ${{ github.run_id }}
           image_infos: ${{ toJson(matrix) }}
 
       - name: Calculate expire date
