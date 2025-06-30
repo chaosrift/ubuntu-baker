@@ -427,7 +427,7 @@ jobs:
           flavor: ${{ matrix.flavor }}
           rootfs_artifact_name: ${{ matrix.rootfs_artifact_name || '' }}
           kernel_artifact_name: ${{ matrix.kernel_artifact_name || '' }}
-          uboot_artifact_name: ${{ matrix.uboot_artifact_name || '' }}
+          u-boot_artifact_name: ${{ matrix.u-boot_artifact_name || '' }}
           release_tag: ${{ env.EFFECTIVE_RELEASE_TAG }}
           artifact_retention_days: ${{ env.EFFECTIVE_IMAGE_ARTIFACT_RETENTION_DAYS }}
           oss_access_key: ${{ secrets.OSS_ACCESS_KEY }}
