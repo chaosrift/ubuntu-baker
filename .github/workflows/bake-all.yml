@@ -104,6 +104,7 @@ env:
   REGISTRY_NAMESPACE: ${{ github.event.inputs.registry_namespace || github.event.client_payload.registry_namespace || github.repository }}
   REGISTRY_USERNAME: ${{ github.event.inputs.registry_username || github.event.client_payload.registry_username || github.actor }}
   BUILD_TYPE: ${{ github.event.inputs.build_type || github.event.client_payload.build_type || 'nightly' }}
+  CHECK_OCI: ${{ github.event.inputs.check_oci || github.event.client_payload.check_oci || 'true' }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.inputs.release_tag || github.event.client_payload.release_tag || '' }}
@@ -273,7 +274,7 @@ jobs:
           repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
           artifact_retention_days: ${{ format('{0}', env.EFFECTIVE_BAKER_ARTIFACT_RETENTION_DAYS) }}
           registry_upload: ${{ env.REGISTRY_TYPE != 'none' }}
-          registry_check: ${{ env.REGISTRY_TYPE != 'none' }}
+          registry_check: ${{ env.REGISTRY_TYPE != 'none' && env.CHECK_OCI == 'true' }}
           registry_url: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_SERVERID || 'ghcr.io' }}
           registry_namespace: ${{ env.REGISTRY_NAMESPACE }}
           registry_username: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_USERNAME || github.actor }}
@@ -323,7 +324,7 @@ jobs:
           board: ${{ matrix.representative_board }}
           artifact_retention_days: ${{ format('{0}', env.EFFECTIVE_BAKER_ARTIFACT_RETENTION_DAYS) }}
           registry_upload: ${{ env.REGISTRY_TYPE != 'none' }}
-          registry_check: ${{ env.REGISTRY_TYPE != 'none' }}
+          registry_check:  ${{ env.REGISTRY_TYPE != 'none' && env.CHECK_OCI == 'true' }}
           registry_url: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_SERVERID || 'ghcr.io' }}
           registry_namespace: ${{ env.REGISTRY_NAMESPACE }}
           registry_username: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_USERNAME || github.actor }}
@@ -373,7 +374,7 @@ jobs:
           repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
           artifact_retention_days: ${{ format('{0}', env.EFFECTIVE_BAKER_ARTIFACT_RETENTION_DAYS) }}
           registry_upload: ${{ env.REGISTRY_TYPE != 'none' }}
-          registry_check: ${{ env.REGISTRY_TYPE != 'none' }}
+          registry_check:  ${{ env.REGISTRY_TYPE != 'none' && env.CHECK_OCI == 'true' }}
           registry_url: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_SERVERID || 'ghcr.io' }}
           registry_namespace: ${{ env.REGISTRY_NAMESPACE }}
           registry_username: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_USERNAME || github.actor }}
