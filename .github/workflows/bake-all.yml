@@ -77,10 +77,10 @@ env:
 
   # OCI registry configuration - use first entry from oci_infos if provided, otherwise use defaults
   OCI_INFOS: ${{ github.event.client_payload.oci_infos || '[]' }}
-  REGISTRY_TYPE: ${{ github.event.client_payload.oci_infos && fromJson(github.event.client_payload.oci_infos)[0].type || 'ghcr' }}
-  REGISTRY_SERVER: ${{ github.event.client_payload.oci_infos && fromJson(github.event.client_payload.oci_infos)[0].server || 'ghcr.io' }}
-  REGISTRY_NAMESPACE: ${{ github.event.client_payload.oci_infos && fromJson(github.event.client_payload.oci_infos)[0].namespace || github.repository }}
-  REGISTRY_USERNAME: ${{ github.event.client_payload.oci_infos && fromJson(github.event.client_payload.oci_infos)[0].username || github.actor }}
+  REGISTRY_TYPE: ${{ (github.event.client_payload.oci_infos && fromJson(github.event.client_payload.oci_infos)[0].type) || 'ghcr' }}
+  REGISTRY_SERVER: ${{ (github.event.client_payload.oci_infos && fromJson(github.event.client_payload.oci_infos)[0].server) || 'ghcr.io' }}
+  REGISTRY_NAMESPACE: ${{ (github.event.client_payload.oci_infos && fromJson(github.event.client_payload.oci_infos)[0].namespace) || github.repository }}
+  REGISTRY_USERNAME: ${{ (github.event.client_payload.oci_infos && fromJson(github.event.client_payload.oci_infos)[0].username) || github.actor }}
 
   # OSS configuration - pass entire array to image-baker
   OSS_INFOS: ${{ github.event.client_payload.oss_infos || '[]' }}
