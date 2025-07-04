@@ -493,8 +493,8 @@ jobs:
           image_matrix='${{ needs.matrix.outputs.image_matrix }}'
           oss_infos='${{ env.OSS_INFOS }}'
 
-          echo "Image matrix: $image_matrix"
-          echo "OSS infos: $oss_infos"
+          echo "Image matrix received"
+          echo "OSS configuration received"
 
           # If OSS_INFOS is null or empty, default to empty array
           if [[ -z "$oss_infos" || "$oss_infos" == "null" || "$oss_infos" == "" ]]; then
@@ -517,9 +517,9 @@ jobs:
                 })
               ]
             }
-          ')
+          ' | jq -c .)
 
-          echo "Generated upload matrix: $upload_matrix"
+          echo "Upload matrix generated successfully"
           echo "upload_matrix=$upload_matrix" >> $GITHUB_OUTPUT
 
   upload-to-oss:
