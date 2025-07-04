@@ -76,14 +76,14 @@ env:
   EFFECTIVE_RUNNER: ${{ github.event.inputs.runner || github.event.client_payload.runner || 'ubuntu-latest' }}
 
   # OCI registry configuration - use first entry from oci_infos if provided, otherwise use defaults
-  OCI_INFOS: ${{ github.event.client_payload.oci_infos || '[]' }}
+  OCI_INFOS: "${{ github.event.client_payload.oci_infos || '[]' }}"
   REGISTRY_TYPE: ghcr
   REGISTRY_SERVER: ghcr.io
   REGISTRY_NAMESPACE: ${{ github.repository }}
   REGISTRY_USERNAME: ${{ github.actor }}
 
   # OSS configuration - pass entire array to image-baker
-  OSS_INFOS: ${{ github.event.client_payload.oss_infos || '[]' }}
+  OSS_INFOS: "${{ github.event.client_payload.oss_infos || '[]' }}"
 
   BUILD_TYPE: ${{ github.event.inputs.build_type || github.event.client_payload.build_type || 'nightly' }}
   CHECK_OCI: ${{ github.event.client_payload.check_oci || 'true' }}
