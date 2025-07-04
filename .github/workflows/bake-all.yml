@@ -538,7 +538,7 @@ jobs:
       - name: Download image artifact
         uses: actions/download-artifact@v4
         with:
-          name: image-${{ matrix.board }}-${{ matrix.suite }}-${{ matrix.flavor }}-${{ matrix.variant || 'default' }}
+          name: image-${{ matrix.board }}-${{ matrix.suite }}-${{ matrix.flavor }}-${{ matrix.variant }}
           path: ./downloaded-zips
 
       - name: List downloaded files
@@ -578,15 +578,142 @@ jobs:
         run: |
           echo "Uploaded to OSS URL: ${{ steps.upload_to_oss.outputs.url }}"
 
-      - name: Update release
-        uses: softprops/action-gh-release@v2
+      - name: Create OSS URL tracking file
+        if: ${{ matrix.oss_access_key != '' && matrix.oss_secret_key != '' && steps.upload_to_oss.outcome == 'success' }}
+        id: create_tracking_file
+        shell: bash
+        run: |
+          # Create individual tracking file for this upload (will be consolidated later)
+          BOARD_NAME="${{ matrix.board }}"
+          OSS_URL="${{ steps.upload_to_oss.outputs.url }}"
+          IMAGE_NAME="${{ steps.find_image.outputs.image_name }}"
+          UPLOAD_TIME=$(TZ='Asia/Shanghai' date +"%Y-%m-%d %H:%M:%S CST")
+
+          # Create unique filename including access key hash to avoid race conditions
+          ACCESS_KEY_HASH=$(echo -n "${{ matrix.oss_access_key }}" | sha256sum | cut -d' ' -f1 | head -c 8)
+          TRACKING_FILE="${BOARD_NAME}-${{ matrix.suite }}-${{ matrix.flavor }}-${{ matrix.variant }}-${ACCESS_KEY_HASH}-tracking.json"
+          ARTIFACT_NAME="oss-tracking-${BOARD_NAME}-${{ matrix.suite }}-${{ matrix.flavor }}-${{ matrix.variant }}-${ACCESS_KEY_HASH}"
+
+          # Create JSON tracking data for later consolidation
+          cat > "$TRACKING_FILE" << EOF
+          {
+            "board": "${BOARD_NAME}",
+            "image": "${IMAGE_NAME}",
+            "suite": "${{ matrix.suite }}",
+            "flavor": "${{ matrix.flavor }}",
+            "variant": "${{ matrix.variant }}",
+            "release_tag": "${{ env.EFFECTIVE_RELEASE_TAG }}",
+            "upload_time": "${UPLOAD_TIME}",
+            "oss_url": "${OSS_URL}",
+            "access_key_hash": "${ACCESS_KEY_HASH}"
+          }
+          EOF
+
+          echo "tracking_file=${TRACKING_FILE}" >> $GITHUB_OUTPUT
+          echo "artifact_name=${ARTIFACT_NAME}" >> $GITHUB_OUTPUT
+
+          echo "Created individual tracking file: $TRACKING_FILE"
+          cat "$TRACKING_FILE"
+
+      - name: Upload individual tracking file as artifact
+        if: ${{ matrix.oss_access_key != '' && matrix.oss_secret_key != '' && steps.upload_to_oss.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
         with:
-          repository: ${{ env.RECIPE_REP }}
-          tag_name: ${{ env.EFFECTIVE_RELEASE_TAG }}
+          name: ${{ steps.create_tracking_file.outputs.artifact_name }}
+          path: ${{ steps.create_tracking_file.outputs.tracking_file }}
+          retention-days: 1
+
+  consolidate-oss-tracking:
+    if: ${{ github.actor == 'diverger' && github.event.client_payload.oss_infos }}
+    needs: [upload-to-oss]
+    runs-on: ubuntu-latest
+    name: Consolidate OSS Tracking Files
+    steps:
+      - name: Download all OSS tracking artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: oss-tracking-*
+          path: ./oss-tracking-files
+          merge-multiple: true
+
+      - name: List downloaded tracking files
+        run: |
+          echo "Downloaded OSS tracking files:"
+          find ./oss-tracking-files -name "*.json" | sort
+
+      - name: Consolidate tracking files by board
+        shell: bash
+        run: |
+          # Get list of unique boards from tracking files
+          BOARDS=$(find ./oss-tracking-files -name "*-tracking.json" | xargs -I {} basename {} | cut -d'-' -f1 | sort -u)
+
+          echo "Found boards: $BOARDS"
+
+          for BOARD in $BOARDS; do
+            echo "Processing board: $BOARD"
+            BOARD_FILES=$(find ./oss-tracking-files -name "${BOARD}-*-tracking.json" | sort)
+            CONSOLIDATED_FILE="${BOARD}-oss-urls.md"
+
+            # Start the consolidated markdown file
+            echo "# OSS Upload Tracking - ${BOARD}" > "$CONSOLIDATED_FILE"
+            echo "" >> "$CONSOLIDATED_FILE"
+
+            # Process each tracking file for this board
+            IMAGE_COUNT=1
+            for TRACKING_FILE in $BOARD_FILES; do
+              echo "Processing: $TRACKING_FILE"
+
+              # Extract data using jq
+              BOARD_NAME=$(jq -r '.board' "$TRACKING_FILE")
+              IMAGE_NAME=$(jq -r '.image' "$TRACKING_FILE")
+              SUITE=$(jq -r '.suite' "$TRACKING_FILE")
+              FLAVOR=$(jq -r '.flavor' "$TRACKING_FILE")
+              VARIANT=$(jq -r '.variant' "$TRACKING_FILE")
+              RELEASE_TAG=$(jq -r '.release_tag' "$TRACKING_FILE")
+              UPLOAD_TIME=$(jq -r '.upload_time' "$TRACKING_FILE")
+              OSS_URL=$(jq -r '.oss_url' "$TRACKING_FILE")
+
+              # Add separator for multiple images (except first one)
+              if [[ $IMAGE_COUNT -gt 1 ]]; then
+                echo "---" >> "$CONSOLIDATED_FILE"
+                echo "" >> "$CONSOLIDATED_FILE"
+              fi
+
+              # Add image section to consolidated file
+              {
+                echo "## Image ${IMAGE_COUNT}: ${SUITE}-${FLAVOR}-${VARIANT}"
+                echo ""
+                echo "- **Board**: ${BOARD_NAME}"
+                echo "- **Image**: ${IMAGE_NAME}"
+                echo "- **Suite**: ${SUITE}"
+                echo "- **Flavor**: ${FLAVOR}"
+                echo "- **Variant**: ${VARIANT}"
+                echo "- **Release Tag**: ${RELEASE_TAG}"
+                echo "- **Upload Time**: ${UPLOAD_TIME}"
+                echo "- **OSS URL**: [Download](${OSS_URL})"
+                echo ""
+              } >> "$CONSOLIDATED_FILE"
+
+              ((IMAGE_COUNT++))
+            done
+
+            echo "Created consolidated tracking file: $CONSOLIDATED_FILE"
+            echo "Contents:"
+            cat "$CONSOLIDATED_FILE"
+            echo "=========================="
+          done
+
+      - name: Upload consolidated tracking files to release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ env.EFFECTIVE_RELEASE_TAG }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
-          append_body: true
-          body: |
-            ---
-            #### ${{ steps.find_image.outputs.image_name }}
-            ☁️ Aliyun OSS Path: ${{ steps.upload_to_oss.outputs.url }}
+          artifacts: "*-oss-urls.md"
+          artifactContentType: text/markdown
+          allowUpdates: true
+          omitDraftDuringUpdate: true
+          omitPrereleaseDuringUpdate: true
+          updateOnlyUnreleased: false
+          replacesArtifacts: false
+
 
