@@ -552,7 +552,7 @@ jobs:
           IMAGE_PATH="./downloaded-zips/$IMAGE_FILENAME"
 
           echo "image_path=$IMAGE_PATH" >> $GITHUB_OUTPUT
-          echo "image_filename=$IMAGE_FILENAME" >> $GITHUB_OUTPUT
+          echo "image_name=$IMAGE_FILENAME" >> $GITHUB_OUTPUT
           echo "Found image: $IMAGE_FILENAME"
           echo "Full path: $IMAGE_PATH"
 
@@ -577,3 +577,16 @@ jobs:
         shell: bash
         run: |
           echo "Uploaded to OSS URL: ${{ steps.upload_to_oss.outputs.url }}"
+
+      - name: Update release
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: ${{ env.RECIPE_REP }}
+          tag_name: ${{ env.EFFECTIVE_RELEASE_TAG }}
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          append_body: true
+          body: |
+            ---
+            #### ${{ steps.find_image.outputs.image_name }}
+            ☁️ Aliyun OSS Path: ${{ steps.upload_to_oss.outputs.url }}
+
