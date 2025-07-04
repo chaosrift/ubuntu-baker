@@ -62,31 +62,6 @@ on:
         type: string
         default: ''
 
-      registry_type:
-        description: 'Container registry to use'
-        required: false
-        default: 'ghcr'
-        type: choice
-        options:
-          - 'ghcr'
-          - 'acr'
-          - 'none'
-
-      registry_server:
-        description: 'Registry server URL (auto-detected if empty)'
-        required: false
-        type: string
-
-      registry_namespace:
-        description: 'Registry namespace (auto-detected if empty)'
-        required: false
-        type: string
-
-      registry_username:
-        description: 'Registry username (auto-detected if empty)'
-        required: false
-        type: string
-
 env:
   RECIPE_REP: 'diverger/ubuntu-rockchip'
   RECIPE_REF: ${{ github.event.client_payload.build_ref || 'diverger' }}
@@ -99,12 +74,19 @@ env:
   EFFECTIVE_IMAGE_ARTIFACT_RETENTION_DAYS: 90
   EFFECTIVE_RELEASE_TAG: ${{ github.event.inputs.release_tag || github.event.client_payload.release_tag || '' }}
   EFFECTIVE_RUNNER: ${{ github.event.inputs.runner || github.event.client_payload.runner || 'ubuntu-latest' }}
-  REGISTRY_TYPE: ${{ github.event.inputs.registry_type || github.event.client_payload.registry_type || 'ghcr' }}
-  REGISTRY_SERVER: ${{ github.event.inputs.registry_server || github.event.client_payload.registry_server || 'ghcr.io' }}
-  REGISTRY_NAMESPACE: ${{ github.event.inputs.registry_namespace || github.event.client_payload.registry_namespace || github.repository }}
-  REGISTRY_USERNAME: ${{ github.event.inputs.registry_username || github.event.client_payload.registry_username || github.actor }}
+
+  # OCI registry configuration - use first entry from oci_infos if provided, otherwise use defaults
+  OCI_INFOS: ${{ github.event.client_payload.oci_infos || '[]' }}
+  REGISTRY_TYPE: ${{ github.event.client_payload.oci_infos && fromJson(github.event.client_payload.oci_infos)[0].type || 'ghcr' }}
+  REGISTRY_SERVER: ${{ github.event.client_payload.oci_infos && fromJson(github.event.client_payload.oci_infos)[0].server || 'ghcr.io' }}
+  REGISTRY_NAMESPACE: ${{ github.event.client_payload.oci_infos && fromJson(github.event.client_payload.oci_infos)[0].namespace || github.repository }}
+  REGISTRY_USERNAME: ${{ github.event.client_payload.oci_infos && fromJson(github.event.client_payload.oci_infos)[0].username || github.actor }}
+
+  # OSS configuration - pass entire array to image-baker
+  OSS_INFOS: ${{ github.event.client_payload.oss_infos || '[]' }}
+
   BUILD_TYPE: ${{ github.event.inputs.build_type || github.event.client_payload.build_type || 'nightly' }}
-  CHECK_OCI: ${{ github.event.inputs.check_oci || github.event.client_payload.check_oci || 'true' }}
+  CHECK_OCI: ${{ github.event.client_payload.check_oci || 'true' }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.inputs.release_tag || github.event.client_payload.release_tag || '' }}
@@ -138,7 +120,7 @@ jobs:
 
   matrix:
     if: ${{ always() && github.actor == 'diverger' }}
-    runs-on: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner) || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner) || 'ubuntu-latest' }}
+    runs-on: 'ubuntu-latest'
     needs: update-release
     name: Generate Build Matrices
     outputs:
@@ -429,8 +411,6 @@ jobs:
           u-boot_artifact_name: ${{ matrix.u-boot_artifact_name || '' }}
           release_tag: ${{ env.EFFECTIVE_RELEASE_TAG }}
           artifact_retention_days: ${{ env.EFFECTIVE_IMAGE_ARTIFACT_RETENTION_DAYS }}
-          oss_access_key: ${{ secrets.OSS_ACCESS_KEY }}
-          oss_secret_key: ${{ secrets.OSS_SECRET_KEY }}
           baker_repo: ${{ github.repository }}
           image_infos: ${{ toJson(matrix) }}
           build_type: ${{ env.BUILD_TYPE }}
@@ -443,3 +423,108 @@ jobs:
           echo "Expire date: $expire_date"
           echo "expire_date=$expire_date" >> $GITHUB_OUTPUT
           echo "📅 Artifact Expire Date: $expire_date" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload built image as artifact
+        if: ${{ success() && steps.image_build_step.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-${{ matrix.board }}-${{ matrix.suite }}-${{ matrix.flavor }}-${{ matrix.variant || 'default' }}
+          path: ${{ steps.image_build_step.outputs.zip_path }}
+          retention-days: ${{ env.EFFECTIVE_IMAGE_ARTIFACT_RETENTION_DAYS }}
+
+  upload-matrix:
+    if: ${{ github.actor == 'diverger' && github.event.client_payload.oss_infos && github.event.client_payload.oss_infos != '[]' }}
+    needs: [matrix, image]
+    runs-on: ubuntu-latest
+    name: Generate Upload Matrix
+    outputs:
+      upload_matrix: ${{ steps.generate.outputs.upload_matrix }}
+    steps:
+      - name: Generate upload matrix
+        id: generate
+        env:
+          OSS_INFOS: ${{ github.event.client_payload.oss_infos || '[]' }}
+        run: |
+          # Combine image matrix with OSS configurations
+          image_matrix='${{ needs.matrix.outputs.image_matrix }}'
+          oss_infos='${{ env.OSS_INFOS }}'
+
+          echo "Image matrix: $image_matrix"
+          echo "OSS infos: $oss_infos"
+
+          # Create cross-product of images and OSS destinations
+          upload_matrix=$(echo "$image_matrix" "$oss_infos" | jq -s '
+            .[0].include as $images |
+            .[1] as $oss_configs |
+            {
+              include: [
+                $images[] as $img |
+                $oss_configs[] as $oss |
+                ($img + {
+                  oss_region: $oss.region,
+                  oss_bucket: $oss.bucket,
+                  oss_access_key: $oss.access_key,
+                  oss_secret_key: $oss.secret_key
+                })
+              ]
+            }
+          ')
+
+          echo "Generated upload matrix: $upload_matrix"
+          echo "upload_matrix=$upload_matrix" >> $GITHUB_OUTPUT
+
+  upload-to-oss:
+    if: ${{ github.actor == 'diverger' && github.event.client_payload.oss_infos && github.event.client_payload.oss_infos != '[]' }}
+    needs: [upload-matrix, image]
+    runs-on: 'ubuntu-latest'
+    name: Upload to OSS
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.upload-matrix.outputs.upload_matrix) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: image-${{ matrix.board }}-${{ matrix.suite }}-${{ matrix.flavor }}-${{ matrix.variant || 'default' }}
+          path: ./downloaded-zips
+
+      - name: List downloaded files
+        id: find_image
+        run: |
+          echo "Contents of ./downloaded-zips:"
+          ls -la ./downloaded-zips/
+
+          # Get the image file (there should be only one .img.zip file)
+          IMAGE_FILENAME=$(ls ./downloaded-zips/*.zip | head -1 | xargs basename)
+          IMAGE_PATH="./downloaded-zips/$IMAGE_FILENAME"
+
+          echo "image_path=$IMAGE_PATH" >> $GITHUB_OUTPUT
+          echo "image_filename=$IMAGE_FILENAME" >> $GITHUB_OUTPUT
+          echo "Found image: $IMAGE_FILENAME"
+          echo "Full path: $IMAGE_PATH"
+
+      - name: Upload to oss
+        if: ${{ matrix.oss_access_key != '' && matrix.oss_secret_key != '' }}
+        id: upload_to_oss
+        uses: diverger/gh-oss-helper@v1
+        env:
+          ACTIONS_STEP_DEBUG: true
+        with:
+          access-key: ${{ matrix.oss_access_key }}
+          secret-key: ${{ matrix.oss_secret_key }}
+          region: ${{ matrix.oss_region }}
+          bucket: ${{ matrix.oss_bucket }}
+          timeout: 3600
+          continue-on-error: true
+          assets: |
+            ${{ steps.find_image.outputs.image_path }}:/joshua/${{ env.EFFECTIVE_RELEASE_TAG }}/
+
+      - name: 📊 Report uploading status
+        if: ${{ matrix.oss_access_key != '' && matrix.oss_secret_key != '' }}
+        shell: bash
+        run: |
+          echo "Uploaded to OSS URL: ${{ steps.upload_to_oss.outputs.url }}"
