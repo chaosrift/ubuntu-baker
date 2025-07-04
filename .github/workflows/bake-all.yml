@@ -472,7 +472,7 @@ jobs:
         if: ${{ success() && steps.image_build_step.outcome == 'success' }}
         uses: actions/upload-artifact@v4
         with:
-          name: image-${{ matrix.board }}-${{ matrix.suite }}-${{ matrix.flavor }}-${{ matrix.variant }}
+          name: image-${{ matrix.board }}-${{ matrix.suite }}-${{ matrix.flavor }}-${{ matrix.variant || 'default' }}
           path: ${{ steps.image_build_step.outputs.zip_path }}
           retention-days: ${{ env.EFFECTIVE_IMAGE_ARTIFACT_RETENTION_DAYS }}
 
@@ -538,7 +538,7 @@ jobs:
       - name: Download image artifact
         uses: actions/download-artifact@v4
         with:
-          name: image-${{ matrix.board }}-${{ matrix.suite }}-${{ matrix.flavor }}-${{ matrix.variant }}
+          name: image-${{ matrix.board }}-${{ matrix.suite }}-${{ matrix.flavor }}-${{ matrix.variant || 'default' }}
           path: ./downloaded-zips
 
       - name: List downloaded files
@@ -645,6 +645,7 @@ jobs:
         shell: bash
         run: |
           # Get list of unique boards from tracking files
+          # The filename pattern is now: ${BOARD}-${SUITE}-${FLAVOR}-${VARIANT}-${ACCESS_KEY_HASH}-tracking.json
           BOARDS=$(find ./oss-tracking-files -name "*-tracking.json" | xargs -I {} basename {} | cut -d'-' -f1 | sort -u)
 
           echo "Found boards: $BOARDS"
@@ -672,6 +673,7 @@ jobs:
               RELEASE_TAG=$(jq -r '.release_tag' "$TRACKING_FILE")
               UPLOAD_TIME=$(jq -r '.upload_time' "$TRACKING_FILE")
               OSS_URL=$(jq -r '.oss_url' "$TRACKING_FILE")
+              ACCESS_KEY_HASH=$(jq -r '.access_key_hash // "unknown"' "$TRACKING_FILE")
 
               # Add separator for multiple images (except first one)
               if [[ $IMAGE_COUNT -gt 1 ]]; then
@@ -681,7 +683,7 @@ jobs:
 
               # Add image section to consolidated file
               {
-                echo "## Image ${IMAGE_COUNT}: ${SUITE}-${FLAVOR}-${VARIANT}"
+                echo "## Image ${IMAGE_COUNT}: ${SUITE}-${FLAVOR}-${VARIANT} (OSS: ${ACCESS_KEY_HASH})"
                 echo ""
                 echo "- **Board**: ${BOARD_NAME}"
                 echo "- **Image**: ${IMAGE_NAME}"
@@ -691,6 +693,7 @@ jobs:
                 echo "- **Release Tag**: ${RELEASE_TAG}"
                 echo "- **Upload Time**: ${UPLOAD_TIME}"
                 echo "- **OSS URL**: [Download](${OSS_URL})"
+                echo "- **OSS Destination**: ${ACCESS_KEY_HASH}"
                 echo ""
               } >> "$CONSOLIDATED_FILE"
 
