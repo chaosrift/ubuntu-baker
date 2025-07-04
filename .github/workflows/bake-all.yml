@@ -76,14 +76,14 @@ env:
   EFFECTIVE_RUNNER: ${{ github.event.inputs.runner || github.event.client_payload.runner || 'ubuntu-latest' }}
 
   # OCI registry configuration - use first entry from oci_infos if provided, otherwise use defaults
-  OCI_INFOS: "${{ github.event.client_payload.oci_infos || '[]' }}"
+  OCI_INFOS: ${{ github.event.client_payload.oci_infos || '' }}
   REGISTRY_TYPE: ghcr
   REGISTRY_SERVER: ghcr.io
   REGISTRY_NAMESPACE: ${{ github.repository }}
   REGISTRY_USERNAME: ${{ github.actor }}
 
   # OSS configuration - pass entire array to image-baker
-  OSS_INFOS: "${{ github.event.client_payload.oss_infos || '[]' }}"
+  OSS_INFOS: ${{ github.event.client_payload.oss_infos || '' }}
 
   BUILD_TYPE: ${{ github.event.inputs.build_type || github.event.client_payload.build_type || 'nightly' }}
   CHECK_OCI: ${{ github.event.client_payload.check_oci || 'true' }}
@@ -229,7 +229,7 @@ jobs:
           echo "OCI_INFOS: $OCI_INFOS"
 
           # Parse OCI configuration and extract first entry, or use defaults
-          if [[ "$OCI_INFOS" != "[]" && "$OCI_INFOS" != "" ]]; then
+          if [[ "$OCI_INFOS" != "" && "$OCI_INFOS" != "[]" ]]; then
             echo "Using OCI configuration from payload"
             registry_type=$(echo "$OCI_INFOS" | jq -r '.[0].type // "ghcr"')
             registry_server=$(echo "$OCI_INFOS" | jq -r '.[0].server // "ghcr.io"')
@@ -477,7 +477,7 @@ jobs:
           retention-days: ${{ env.EFFECTIVE_IMAGE_ARTIFACT_RETENTION_DAYS }}
 
   upload-matrix:
-    if: ${{ github.actor == 'diverger' && github.event.client_payload.oss_infos && github.event.client_payload.oss_infos != '[]' }}
+    if: ${{ github.actor == 'diverger' && github.event.client_payload.oss_infos && github.event.client_payload.oss_infos != '' }}
     needs: [matrix, image]
     runs-on: ubuntu-latest
     name: Generate Upload Matrix
@@ -487,7 +487,7 @@ jobs:
       - name: Generate upload matrix
         id: generate
         env:
-          OSS_INFOS: ${{ github.event.client_payload.oss_infos || '[]' }}
+          OSS_INFOS: ${{ github.event.client_payload.oss_infos || '' }}
         run: |
           # Combine image matrix with OSS configurations
           image_matrix='${{ needs.matrix.outputs.image_matrix }}'
@@ -495,6 +495,11 @@ jobs:
 
           echo "Image matrix: $image_matrix"
           echo "OSS infos: $oss_infos"
+
+          # If OSS_INFOS is empty, default to empty array
+          if [[ -z "$oss_infos" || "$oss_infos" == "" ]]; then
+            oss_infos='[]'
+          fi
 
           # Create cross-product of images and OSS destinations
           upload_matrix=$(echo "$image_matrix" "$oss_infos" | jq -s '
@@ -518,7 +523,7 @@ jobs:
           echo "upload_matrix=$upload_matrix" >> $GITHUB_OUTPUT
 
   upload-to-oss:
-    if: ${{ github.actor == 'diverger' && github.event.client_payload.oss_infos && github.event.client_payload.oss_infos != '[]' }}
+    if: ${{ github.actor == 'diverger' && github.event.client_payload.oss_infos && github.event.client_payload.oss_infos != '' }}
     needs: [upload-matrix, image]
     runs-on: 'ubuntu-latest'
     name: Upload to OSS
