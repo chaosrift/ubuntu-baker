@@ -472,7 +472,7 @@ jobs:
         if: ${{ success() && steps.image_build_step.outcome == 'success' }}
         uses: actions/upload-artifact@v4
         with:
-          name: image-${{ matrix.board }}-${{ matrix.suite }}-${{ matrix.flavor }}-${{ matrix.variant || 'default' }}
+          name: image-${{ matrix.board }}-${{ matrix.suite }}-${{ matrix.flavor }}-${{ matrix.variant }}
           path: ${{ steps.image_build_step.outputs.zip_path }}
           retention-days: ${{ env.EFFECTIVE_IMAGE_ARTIFACT_RETENTION_DAYS }}
 
