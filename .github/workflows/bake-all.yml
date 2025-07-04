@@ -77,10 +77,10 @@ env:
 
   # OCI registry configuration - use first entry from oci_infos if provided, otherwise use defaults
   OCI_INFOS: ${{ github.event.client_payload.oci_infos || '[]' }}
-  REGISTRY_TYPE: ${{ (github.event.client_payload.oci_infos && fromJson(github.event.client_payload.oci_infos)[0].type) || 'ghcr' }}
-  REGISTRY_SERVER: ${{ (github.event.client_payload.oci_infos && fromJson(github.event.client_payload.oci_infos)[0].server) || 'ghcr.io' }}
-  REGISTRY_NAMESPACE: ${{ (github.event.client_payload.oci_infos && fromJson(github.event.client_payload.oci_infos)[0].namespace) || github.repository }}
-  REGISTRY_USERNAME: ${{ (github.event.client_payload.oci_infos && fromJson(github.event.client_payload.oci_infos)[0].username) || github.actor }}
+  REGISTRY_TYPE: ghcr
+  REGISTRY_SERVER: ghcr.io
+  REGISTRY_NAMESPACE: ${{ github.repository }}
+  REGISTRY_USERNAME: ${{ github.actor }}
 
   # OSS configuration - pass entire array to image-baker
   OSS_INFOS: ${{ github.event.client_payload.oss_infos || '[]' }}
@@ -121,7 +121,7 @@ jobs:
   matrix:
     if: ${{ always() && github.actor == 'diverger' }}
     runs-on: 'ubuntu-latest'
-    needs: update-release
+    needs: [update-release, oci-config]
     name: Generate Build Matrices
     outputs:
       rootfs_matrix: ${{ steps.matrices.outputs.rootfs_matrix }}
@@ -156,28 +156,28 @@ jobs:
           echo "Using OS version: $OS_VERSION"
 
           echo "Generating rootfs matrix..."
-          rootfs_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type rootfs --output json --os-version "$OS_VERSION" --registry-url "$REGISTRY_SERVER" --namespace "$REGISTRY_NAMESPACE")
+          rootfs_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type rootfs --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}")
           echo "rootfs_matrix=$rootfs_matrix" >> $GITHUB_OUTPUT
           rootfs_count=$(echo "$rootfs_matrix" | jq '.include | length')
           echo "rootfs_count=$rootfs_count" >> $GITHUB_OUTPUT
           echo "Rootfs matrix: $rootfs_matrix"
 
           echo "Generating kernel matrix..."
-          kernel_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type kernel --output json --os-version "$OS_VERSION" --registry-url "$REGISTRY_SERVER" --namespace "$REGISTRY_NAMESPACE")
+          kernel_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type kernel --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}")
           echo "kernel_matrix=$kernel_matrix" >> $GITHUB_OUTPUT
           kernel_count=$(echo "$kernel_matrix" | jq '.include | length')
           echo "kernel_count=$kernel_count" >> $GITHUB_OUTPUT
           echo "Kernel matrix: $kernel_matrix"
 
           echo "Generating uboot matrix..."
-          uboot_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type uboot --output json --os-version "$OS_VERSION" --registry-url "$REGISTRY_SERVER" --namespace "$REGISTRY_NAMESPACE")
+          uboot_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type uboot --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}")
           echo "uboot_matrix=$uboot_matrix" >> $GITHUB_OUTPUT
           uboot_count=$(echo "$uboot_matrix" | jq '.include | length')
           echo "uboot_count=$uboot_count" >> $GITHUB_OUTPUT
           echo "Uboot matrix: $uboot_matrix"
 
           echo "Generating image matrix..."
-          image_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type image --output json --os-version "$OS_VERSION" --registry-url "$REGISTRY_SERVER" --namespace "$REGISTRY_NAMESPACE")
+          image_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type image --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}")
           echo "image_matrix=$image_matrix" >> $GITHUB_OUTPUT
           image_count=$(echo "$image_matrix" | jq '.include | length')
           echo "image_count=$image_count" >> $GITHUB_OUTPUT
@@ -210,9 +210,53 @@ jobs:
           echo '${{ steps.matrices.outputs.image_matrix }}' | jq . >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
+  oci-config:
+    if: ${{ github.actor == 'diverger' }}
+    runs-on: ubuntu-latest
+    name: Extract OCI Configuration
+    outputs:
+      registry_type: ${{ steps.extract.outputs.registry_type }}
+      registry_server: ${{ steps.extract.outputs.registry_server }}
+      registry_namespace: ${{ steps.extract.outputs.registry_namespace }}
+      registry_username: ${{ steps.extract.outputs.registry_username }}
+    steps:
+      - name: Extract OCI configuration from payload
+        id: extract
+        env:
+          OCI_INFOS: ${{ github.event.client_payload.oci_infos || '[]' }}
+        run: |
+          echo "Extracting OCI configuration..."
+          echo "OCI_INFOS: $OCI_INFOS"
+
+          # Parse OCI configuration and extract first entry, or use defaults
+          if [[ "$OCI_INFOS" != "[]" && "$OCI_INFOS" != "" ]]; then
+            echo "Using OCI configuration from payload"
+            registry_type=$(echo "$OCI_INFOS" | jq -r '.[0].type // "ghcr"')
+            registry_server=$(echo "$OCI_INFOS" | jq -r '.[0].server // "ghcr.io"')
+            registry_namespace=$(echo "$OCI_INFOS" | jq -r '.[0].namespace // "${{ github.repository }}"')
+            registry_username=$(echo "$OCI_INFOS" | jq -r '.[0].username // "${{ github.actor }}"')
+          else
+            echo "Using default OCI configuration"
+            registry_type="ghcr"
+            registry_server="ghcr.io"
+            registry_namespace="${{ github.repository }}"
+            registry_username="${{ github.actor }}"
+          fi
+
+          echo "registry_type=$registry_type" >> $GITHUB_OUTPUT
+          echo "registry_server=$registry_server" >> $GITHUB_OUTPUT
+          echo "registry_namespace=$registry_namespace" >> $GITHUB_OUTPUT
+          echo "registry_username=$registry_username" >> $GITHUB_OUTPUT
+
+          echo "OCI Configuration:"
+          echo "  Type: $registry_type"
+          echo "  Server: $registry_server"
+          echo "  Namespace: $registry_namespace"
+          echo "  Username: $registry_username"
+
   rootfs:
     if: ${{ github.actor == 'diverger' }}
-    needs: matrix
+    needs: [matrix, oci-config]
     runs-on: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner) || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner) || 'ubuntu-latest' }}
     name: Build rootfs
     strategy:
@@ -255,16 +299,16 @@ jobs:
           variant: ${{ matrix.variant }}
           repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
           artifact_retention_days: ${{ format('{0}', env.EFFECTIVE_BAKER_ARTIFACT_RETENTION_DAYS) }}
-          registry_upload: ${{ env.REGISTRY_TYPE != 'none' }}
-          registry_check: ${{ env.REGISTRY_TYPE != 'none' && env.CHECK_OCI == 'true' }}
-          registry_url: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_SERVERID || 'ghcr.io' }}
-          registry_namespace: ${{ env.REGISTRY_NAMESPACE }}
-          registry_username: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_USERNAME || github.actor }}
-          registry_token: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_PASSWORD || secrets.GH_ACCESS_TOKEN }}
+          registry_upload: ${{ needs.oci-config.outputs.registry_type != 'none' }}
+          registry_check: ${{ needs.oci-config.outputs.registry_type != 'none' && env.CHECK_OCI == 'true' }}
+          registry_url: ${{ needs.oci-config.outputs.registry_type == 'acr' && secrets.ACR_SERVERID || needs.oci-config.outputs.registry_server }}
+          registry_namespace: ${{ needs.oci-config.outputs.registry_namespace }}
+          registry_username: ${{ needs.oci-config.outputs.registry_type == 'acr' && secrets.ACR_USERNAME || needs.oci-config.outputs.registry_username }}
+          registry_token: ${{ needs.oci-config.outputs.registry_type == 'acr' && secrets.ACR_PASSWORD || secrets.GH_ACCESS_TOKEN }}
 
   kernel:
     if: ${{ github.actor == 'diverger' }}
-    needs: matrix
+    needs: [matrix, oci-config]
     runs-on: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner) || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner) || 'ubuntu-latest' }}
     name: Build kernel
     strategy:
@@ -305,16 +349,16 @@ jobs:
           repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
           board: ${{ matrix.representative_board }}
           artifact_retention_days: ${{ format('{0}', env.EFFECTIVE_BAKER_ARTIFACT_RETENTION_DAYS) }}
-          registry_upload: ${{ env.REGISTRY_TYPE != 'none' }}
-          registry_check:  ${{ env.REGISTRY_TYPE != 'none' && env.CHECK_OCI == 'true' }}
-          registry_url: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_SERVERID || 'ghcr.io' }}
-          registry_namespace: ${{ env.REGISTRY_NAMESPACE }}
-          registry_username: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_USERNAME || github.actor }}
-          registry_token: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_PASSWORD || secrets.GH_ACCESS_TOKEN }}
+          registry_upload: ${{ needs.oci-config.outputs.registry_type != 'none' }}
+          registry_check:  ${{ needs.oci-config.outputs.registry_type != 'none' && env.CHECK_OCI == 'true' }}
+          registry_url: ${{ needs.oci-config.outputs.registry_type == 'acr' && secrets.ACR_SERVERID || needs.oci-config.outputs.registry_server }}
+          registry_namespace: ${{ needs.oci-config.outputs.registry_namespace }}
+          registry_username: ${{ needs.oci-config.outputs.registry_type == 'acr' && secrets.ACR_USERNAME || needs.oci-config.outputs.registry_username }}
+          registry_token: ${{ needs.oci-config.outputs.registry_type == 'acr' && secrets.ACR_PASSWORD || secrets.GH_ACCESS_TOKEN }}
 
   uboot:
     if: ${{ github.actor == 'diverger' }}
-    needs: matrix
+    needs: [matrix, oci-config]
     runs-on: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner) || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner) || 'ubuntu-latest' }}
     name: Build u-boot
     strategy:
@@ -355,12 +399,12 @@ jobs:
           board: ${{ matrix.representative_board }}
           repo_access_token: ${{ secrets.GH_ACCESS_TOKEN }}
           artifact_retention_days: ${{ format('{0}', env.EFFECTIVE_BAKER_ARTIFACT_RETENTION_DAYS) }}
-          registry_upload: ${{ env.REGISTRY_TYPE != 'none' }}
-          registry_check:  ${{ env.REGISTRY_TYPE != 'none' && env.CHECK_OCI == 'true' }}
-          registry_url: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_SERVERID || 'ghcr.io' }}
-          registry_namespace: ${{ env.REGISTRY_NAMESPACE }}
-          registry_username: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_USERNAME || github.actor }}
-          registry_token: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_PASSWORD || secrets.GH_ACCESS_TOKEN }}
+          registry_upload: ${{ needs.oci-config.outputs.registry_type != 'none' }}
+          registry_check:  ${{ needs.oci-config.outputs.registry_type != 'none' && env.CHECK_OCI == 'true' }}
+          registry_url: ${{ needs.oci-config.outputs.registry_type == 'acr' && secrets.ACR_SERVERID || needs.oci-config.outputs.registry_server }}
+          registry_namespace: ${{ needs.oci-config.outputs.registry_namespace }}
+          registry_username: ${{ needs.oci-config.outputs.registry_type == 'acr' && secrets.ACR_USERNAME || needs.oci-config.outputs.registry_username }}
+          registry_token: ${{ needs.oci-config.outputs.registry_type == 'acr' && secrets.ACR_PASSWORD || secrets.GH_ACCESS_TOKEN }}
 
   image:
     if: ${{ github.actor == 'diverger' && success() }}
