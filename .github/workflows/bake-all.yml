@@ -556,12 +556,10 @@ jobs:
           echo "Found image: $IMAGE_FILENAME"
           echo "Full path: $IMAGE_PATH"
 
-      - name: Upload to oss
+      - name: Upload to OSS
         if: ${{ matrix.oss_access_key != '' && matrix.oss_secret_key != '' }}
         id: upload_to_oss
         uses: diverger/gh-oss-helper@v1
-        env:
-          ACTIONS_STEP_DEBUG: true
         with:
           access-key: ${{ matrix.oss_access_key }}
           secret-key: ${{ matrix.oss_secret_key }}
@@ -582,6 +580,8 @@ jobs:
         if: ${{ matrix.oss_access_key != '' && matrix.oss_secret_key != '' && steps.upload_to_oss.outcome == 'success' }}
         id: create_tracking_file
         shell: bash
+        env:
+          OSS_ACCESS_KEY: ${{ matrix.oss_access_key }}
         run: |
           # Create individual tracking file for this upload (will be consolidated later)
           BOARD_NAME="${{ matrix.board }}"
@@ -590,7 +590,8 @@ jobs:
           UPLOAD_TIME=$(TZ='Asia/Shanghai' date +"%Y-%m-%d %H:%M:%S CST")
 
           # Create unique filename including access key hash to avoid race conditions
-          ACCESS_KEY_HASH=$(echo -n "${{ matrix.oss_access_key }}" | sha256sum | cut -d' ' -f1 | head -c 8)
+          # Use environment variable to prevent access key from appearing in logs
+          ACCESS_KEY_HASH=$(echo -n "$OSS_ACCESS_KEY" | sha256sum | cut -d' ' -f1 | head -c 8)
           TRACKING_FILE="${BOARD_NAME}-${{ matrix.suite }}-${{ matrix.flavor }}-${{ matrix.variant }}-${ACCESS_KEY_HASH}-tracking.json"
           ARTIFACT_NAME="oss-tracking-${BOARD_NAME}-${{ matrix.suite }}-${{ matrix.flavor }}-${{ matrix.variant }}-${ACCESS_KEY_HASH}"
 
@@ -624,12 +625,36 @@ jobs:
           retention-days: 1
 
   consolidate-oss-tracking:
-    if: ${{ always() && github.actor == 'diverger' && github.event.client_payload.oss_infos }}
+    if: ${{ always() && github.actor == 'diverger' }}
     needs: [upload-to-oss]
     runs-on: ubuntu-latest
     name: Consolidate OSS Tracking Files
+    env:
+      # Only inherit safe environment variables, exclude OSS_INFOS to prevent credential exposure
+      EFFECTIVE_RELEASE_TAG: ${{ env.EFFECTIVE_RELEASE_TAG }}
     steps:
+      - name: Debug consolidation job conditions
+        run: |
+          echo "=== Consolidation Job Debug Info ==="
+          echo "github.actor: ${{ github.actor }}"
+          echo "github.event.client_payload.oss_infos exists: ${{ github.event.client_payload.oss_infos && 'true' || 'false' }}"
+          echo "upload-to-oss job result: ${{ needs.upload-to-oss.result }}"
+          echo "=== End Debug Info ==="
+
+      - name: Check if OSS configuration exists
+        id: check_oss
+        run: |
+          # Check if OSS configuration was provided (without exposing credentials)
+          if [[ "${{ github.event.client_payload.oss_infos }}" == "" || "${{ github.event.client_payload.oss_infos }}" == "null" ]]; then
+            echo "No OSS configuration found, skipping consolidation"
+            echo "skip_consolidation=true" >> $GITHUB_OUTPUT
+          else
+            echo "OSS configuration found, proceeding with consolidation"
+            echo "skip_consolidation=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Download all OSS tracking artifacts
+        if: ${{ steps.check_oss.outputs.skip_consolidation == 'false' }}
         uses: actions/download-artifact@v4
         with:
           pattern: oss-tracking-*
@@ -637,6 +662,7 @@ jobs:
           merge-multiple: true
 
       - name: List downloaded tracking files
+        if: ${{ steps.check_oss.outputs.skip_consolidation == 'false' }}
         run: |
           echo "Downloaded OSS tracking files:"
           find ./oss-tracking-files -name "*.json" | sort
@@ -653,6 +679,7 @@ jobs:
           done
 
       - name: Consolidate tracking files by board
+        if: ${{ steps.check_oss.outputs.skip_consolidation == 'false' }}
         shell: bash
         run: |
           # Get list of unique boards from tracking files
@@ -725,6 +752,7 @@ jobs:
           done
 
       - name: List created markdown files
+        if: ${{ steps.check_oss.outputs.skip_consolidation == 'false' }}
         run: |
           echo "Files in current directory:"
           ls -la
@@ -732,6 +760,7 @@ jobs:
           ls -la *-oss-urls.md 2>/dev/null || echo "No markdown files found"
 
       - name: Upload consolidated tracking files to release
+        if: ${{ steps.check_oss.outputs.skip_consolidation == 'false' }}
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ env.EFFECTIVE_RELEASE_TAG }}
@@ -742,6 +771,6 @@ jobs:
           omitDraftDuringUpdate: true
           omitPrereleaseDuringUpdate: true
           updateOnlyUnreleased: false
-          replacesArtifacts: false
+          replacesArtifacts: true
 
 
