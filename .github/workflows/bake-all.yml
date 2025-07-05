@@ -624,7 +624,7 @@ jobs:
           retention-days: 1
 
   consolidate-oss-tracking:
-    if: ${{ github.actor == 'diverger' && github.event.client_payload.oss_infos }}
+    if: ${{ always() && github.actor == 'diverger' && github.event.client_payload.oss_infos }}
     needs: [upload-to-oss]
     runs-on: ubuntu-latest
     name: Consolidate OSS Tracking Files
@@ -640,19 +640,39 @@ jobs:
         run: |
           echo "Downloaded OSS tracking files:"
           find ./oss-tracking-files -name "*.json" | sort
+          echo ""
+          echo "Total tracking files found: $(find ./oss-tracking-files -name "*.json" | wc -l)"
+          echo ""
+          echo "File contents preview:"
+          for file in ./oss-tracking-files/*.json; do
+            if [[ -f "$file" ]]; then
+              echo "=== $file ==="
+              cat "$file"
+              echo ""
+            fi
+          done
 
       - name: Consolidate tracking files by board
         shell: bash
         run: |
           # Get list of unique boards from tracking files
           # The filename pattern is now: ${BOARD}-${SUITE}-${FLAVOR}-${VARIANT}-${ACCESS_KEY_HASH}-tracking.json
-          BOARDS=$(find ./oss-tracking-files -name "*-tracking.json" | xargs -I {} basename {} | cut -d'-' -f1 | sort -u)
+          # We need to extract the board name more carefully since board names can contain hyphens
+          BOARDS=$(find ./oss-tracking-files -name "*-tracking.json" | while read file; do
+            # Extract board name from JSON content instead of filename to avoid hyphen issues
+            jq -r '.board' "$file"
+          done | sort -u)
 
           echo "Found boards: $BOARDS"
 
           for BOARD in $BOARDS; do
             echo "Processing board: $BOARD"
-            BOARD_FILES=$(find ./oss-tracking-files -name "${BOARD}-*-tracking.json" | sort)
+            # Find all tracking files for this specific board by checking JSON content
+            BOARD_FILES=$(find ./oss-tracking-files -name "*-tracking.json" | while read file; do
+              if [[ "$(jq -r '.board' "$file")" == "$BOARD" ]]; then
+                echo "$file"
+              fi
+            done | sort)
             CONSOLIDATED_FILE="${BOARD}-oss-urls.md"
 
             # Start the consolidated markdown file
@@ -701,10 +721,15 @@ jobs:
             done
 
             echo "Created consolidated tracking file: $CONSOLIDATED_FILE"
-            echo "Contents:"
-            cat "$CONSOLIDATED_FILE"
             echo "=========================="
           done
+
+      - name: List created markdown files
+        run: |
+          echo "Files in current directory:"
+          ls -la
+          echo "Looking for markdown files:"
+          ls -la *-oss-urls.md 2>/dev/null || echo "No markdown files found"
 
       - name: Upload consolidated tracking files to release
         uses: ncipollo/release-action@v1
