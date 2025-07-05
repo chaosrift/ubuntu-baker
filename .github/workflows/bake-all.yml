@@ -763,7 +763,8 @@ jobs:
         if: ${{ steps.check_oss.outputs.skip_consolidation == 'false' }}
         uses: ncipollo/release-action@v1
         with:
-          repo: ${{ env.RECIPE_REP }}
+          repo: ubuntu-rockchip
+          owner: diverger
           tag: ${{ env.EFFECTIVE_RELEASE_TAG }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           artifacts: "*-oss-urls.md"
@@ -773,5 +774,3 @@ jobs:
           omitPrereleaseDuringUpdate: true
           updateOnlyUnreleased: false
           replacesArtifacts: true
-
-
