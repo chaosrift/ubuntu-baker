@@ -631,7 +631,7 @@ jobs:
     name: Consolidate OSS Tracking Files
     env:
       # Only inherit safe environment variables, exclude OSS_INFOS to prevent credential exposure
-      EFFECTIVE_RELEASE_TAG: ${{ env.EFFECTIVE_RELEASE_TAG }}
+      EFFECTIVE_RELEASE_TAG: ${{ github.event.inputs.release_tag || github.event.client_payload.release_tag || '' }}
     steps:
       - name: Debug consolidation job conditions
         run: |
