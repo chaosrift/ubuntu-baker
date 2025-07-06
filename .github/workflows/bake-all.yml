@@ -188,7 +188,7 @@ jobs:
             echo "### ⚠️ Matrix Generation Warnings" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             # Process warnings and remove ANSI color codes and duplicates
-            grep -E "(Board config not found|Skipping board|⚠️)" "$warnings_file" | \
+            grep "⚠️" "$warnings_file" | \
               sed 's/\x1b\[[0-9;]*m//g' | \
               sort | uniq | \
               while IFS= read -r line; do
