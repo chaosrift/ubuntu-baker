@@ -152,33 +152,51 @@ jobs:
           echo "🎯 Building for boards: $BOARDS_TO_BUILD"
           echo "Using OS version: $OS_VERSION"
 
+          # Capture all warnings and errors from matrix generation
+          warnings_file=$(mktemp)
+
           echo "Generating rootfs matrix..."
-          rootfs_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type rootfs --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}")
+          rootfs_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type rootfs --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}" 2> >(tee -a "$warnings_file" >&2))
           echo "rootfs_matrix=$rootfs_matrix" >> $GITHUB_OUTPUT
           rootfs_count=$(echo "$rootfs_matrix" | jq '.include | length')
           echo "rootfs_count=$rootfs_count" >> $GITHUB_OUTPUT
           echo "Rootfs matrix: $rootfs_matrix"
 
           echo "Generating kernel matrix..."
-          kernel_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type kernel --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}")
+          kernel_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type kernel --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}" 2> >(tee -a "$warnings_file" >&2))
           echo "kernel_matrix=$kernel_matrix" >> $GITHUB_OUTPUT
           kernel_count=$(echo "$kernel_matrix" | jq '.include | length')
           echo "kernel_count=$kernel_count" >> $GITHUB_OUTPUT
           echo "Kernel matrix: $kernel_matrix"
 
           echo "Generating uboot matrix..."
-          uboot_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type uboot --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}")
+          uboot_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type uboot --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}" 2> >(tee -a "$warnings_file" >&2))
           echo "uboot_matrix=$uboot_matrix" >> $GITHUB_OUTPUT
           uboot_count=$(echo "$uboot_matrix" | jq '.include | length')
           echo "uboot_count=$uboot_count" >> $GITHUB_OUTPUT
           echo "Uboot matrix: $uboot_matrix"
 
           echo "Generating image matrix..."
-          image_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type image --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}")
+          image_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type image --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}" 2> >(tee -a "$warnings_file" >&2))
           echo "image_matrix=$image_matrix" >> $GITHUB_OUTPUT
           image_count=$(echo "$image_matrix" | jq '.include | length')
           echo "image_count=$image_count" >> $GITHUB_OUTPUT
           echo "Image matrix: $image_matrix"
+
+          # Add warnings to step summary if any exist
+          if [[ -s "$warnings_file" ]]; then
+            echo "### ⚠️ Matrix Generation Warnings" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            while IFS= read -r line; do
+              if [[ "$line" == *"Board config not found"* ]] || [[ "$line" == *"Skipping board"* ]] || [[ "$line" == *"⚠️"* ]]; then
+                echo "- $line" >> $GITHUB_STEP_SUMMARY
+              fi
+            done < "$warnings_file"
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Clean up
+          rm -f "$warnings_file"
 
       - name: Show matrix summary
         run: |
