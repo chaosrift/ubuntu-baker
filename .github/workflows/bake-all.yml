@@ -152,33 +152,67 @@ jobs:
           echo "🎯 Building for boards: $BOARDS_TO_BUILD"
           echo "Using OS version: $OS_VERSION"
 
+          # Create a temporary file to capture warnings
+          warnings_file=$(mktemp)
+
+          # Function to capture warnings from matrix generation
+          capture_warnings() {
+            local output="$1"
+            local type="$2"
+            echo "$output" | grep -E "⚠️.*Board config not found|⚠️.*Skipping board.*due to config issues" >> "$warnings_file" || true
+          }
+
           echo "Generating rootfs matrix..."
-          rootfs_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type rootfs --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}")
+          rootfs_output=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type rootfs --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}" 2>&1)
+          rootfs_matrix=$(echo "$rootfs_output" | tail -n 1)
+          capture_warnings "$rootfs_output" "rootfs"
           echo "rootfs_matrix=$rootfs_matrix" >> $GITHUB_OUTPUT
           rootfs_count=$(echo "$rootfs_matrix" | jq '.include | length')
           echo "rootfs_count=$rootfs_count" >> $GITHUB_OUTPUT
           echo "Rootfs matrix: $rootfs_matrix"
 
           echo "Generating kernel matrix..."
-          kernel_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type kernel --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}")
+          kernel_output=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type kernel --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}" 2>&1)
+          kernel_matrix=$(echo "$kernel_output" | tail -n 1)
+          capture_warnings "$kernel_output" "kernel"
           echo "kernel_matrix=$kernel_matrix" >> $GITHUB_OUTPUT
           kernel_count=$(echo "$kernel_matrix" | jq '.include | length')
           echo "kernel_count=$kernel_count" >> $GITHUB_OUTPUT
           echo "Kernel matrix: $kernel_matrix"
 
           echo "Generating uboot matrix..."
-          uboot_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type uboot --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}")
+          uboot_output=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type uboot --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}" 2>&1)
+          uboot_matrix=$(echo "$uboot_output" | tail -n 1)
+          capture_warnings "$uboot_output" "uboot"
           echo "uboot_matrix=$uboot_matrix" >> $GITHUB_OUTPUT
           uboot_count=$(echo "$uboot_matrix" | jq '.include | length')
           echo "uboot_count=$uboot_count" >> $GITHUB_OUTPUT
           echo "Uboot matrix: $uboot_matrix"
 
           echo "Generating image matrix..."
-          image_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type image --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}")
+          image_output=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type image --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}" 2>&1)
+          image_matrix=$(echo "$image_output" | tail -n 1)
+          capture_warnings "$image_output" "image"
           echo "image_matrix=$image_matrix" >> $GITHUB_OUTPUT
           image_count=$(echo "$image_matrix" | jq '.include | length')
           echo "image_count=$image_count" >> $GITHUB_OUTPUT
           echo "Image matrix: $image_matrix"
+
+          # Process warnings for output
+          if [ -s "$warnings_file" ]; then
+            echo "warnings_found=true" >> $GITHUB_OUTPUT
+            # Remove duplicates and format for output
+            unique_warnings=$(sort "$warnings_file" | uniq)
+            echo "board_warnings<<EOF" >> $GITHUB_OUTPUT
+            echo "$unique_warnings" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "warnings_found=false" >> $GITHUB_OUTPUT
+            echo "board_warnings=" >> $GITHUB_OUTPUT
+          fi
+
+          # Clean up
+          rm -f "$warnings_file"
 
       - name: Show matrix summary
         run: |
@@ -190,6 +224,21 @@ jobs:
           echo "| U-Boot | ${{ steps.matrices.outputs.uboot_count || 0 }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Images | ${{ steps.matrices.outputs.image_count || 0 }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Show board configuration warnings if any
+          if [[ "${{ steps.matrices.outputs.warnings_found }}" == "true" ]]; then
+            echo "### ⚠️ Board Configuration Warnings" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The following boards could not be found or have configuration issues:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo '${{ steps.matrices.outputs.board_warnings }}' >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Please check that the board configuration files exist in the \`config/boards/\` directory." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
           echo "### 🚀 U-Boot Deduplication Details" >> $GITHUB_STEP_SUMMARY
           echo '```json' >> $GITHUB_STEP_SUMMARY
           echo '${{ steps.matrices.outputs.uboot_matrix }}' | jq . >> $GITHUB_STEP_SUMMARY
