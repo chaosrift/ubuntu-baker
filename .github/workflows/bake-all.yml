@@ -190,24 +190,6 @@ jobs:
           image_count=$(echo "$image_matrix" | jq '.include | length')
           echo "image_count=$image_count" >> $GITHUB_OUTPUT
           echo "Image matrix: $image_matrix"
-          echo "kernel_matrix=$kernel_matrix" >> $GITHUB_OUTPUT
-          kernel_count=$(echo "$kernel_matrix" | jq '.include | length')
-          echo "kernel_count=$kernel_count" >> $GITHUB_OUTPUT
-          echo "Kernel matrix: $kernel_matrix"
-
-          echo "Generating uboot matrix..."
-          uboot_matrix=$(run_matrix_generation "uboot" "uboot_matrix")
-          echo "uboot_matrix=$uboot_matrix" >> $GITHUB_OUTPUT
-          uboot_count=$(echo "$uboot_matrix" | jq '.include | length')
-          echo "uboot_count=$uboot_count" >> $GITHUB_OUTPUT
-          echo "Uboot matrix: $uboot_matrix"
-
-          echo "Generating image matrix..."
-          image_matrix=$(run_matrix_generation "image" "image_matrix")
-          echo "image_matrix=$image_matrix" >> $GITHUB_OUTPUT
-          image_count=$(echo "$image_matrix" | jq '.include | length')
-          echo "image_count=$image_count" >> $GITHUB_OUTPUT
-          echo "Image matrix: $image_matrix"
 
           # Process warnings for output
           if [ -s "$warnings_file" ]; then
