@@ -184,7 +184,7 @@ jobs:
           echo "Image matrix: $image_matrix"
 
           # Add warnings to step summary if any exist
-          if [[ -s "$warnings_file" ]]; then
+          if [[ -s "$warnings_file" ]] && grep -q "⚠️" "$warnings_file"; then
             echo "### ⚠️ Matrix Generation Warnings" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             # Process warnings and remove ANSI color codes and duplicates
