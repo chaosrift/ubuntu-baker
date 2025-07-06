@@ -187,11 +187,13 @@ jobs:
           if [[ -s "$warnings_file" ]]; then
             echo "### ⚠️ Matrix Generation Warnings" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            while IFS= read -r line; do
-              if [[ "$line" == *"Board config not found"* ]] || [[ "$line" == *"Skipping board"* ]] || [[ "$line" == *"⚠️"* ]]; then
+            # Process warnings and remove ANSI color codes and duplicates
+            grep -E "(Board config not found|Skipping board|⚠️)" "$warnings_file" | \
+              sed 's/\x1b\[[0-9;]*m//g' | \
+              sort | uniq | \
+              while IFS= read -r line; do
                 echo "- $line" >> $GITHUB_STEP_SUMMARY
-              fi
-            done < "$warnings_file"
+              done
             echo "" >> $GITHUB_STEP_SUMMARY
           fi
 
