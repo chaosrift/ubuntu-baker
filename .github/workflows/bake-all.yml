@@ -155,46 +155,41 @@ jobs:
           # Create a temporary file to capture warnings
           warnings_file=$(mktemp)
 
-          # Function to run matrix generation and capture warnings
-          run_matrix_generation() {
-            local type="$1"
-            local output_var="$2"
-
-            # Create temporary files for stdout and stderr
-            local stdout_file=$(mktemp)
-            local stderr_file=$(mktemp)
-
-            # Run the script with separated output
-            scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type "$type" --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}" > "$stdout_file" 2> "$stderr_file"
-
-            # Capture warnings from stderr
-            grep -E "⚠️.*Board config not found|⚠️.*Skipping board.*due to config issues" "$stderr_file" >> "$warnings_file" || true
-
-            # Show stderr content for debugging
-            if [ -s "$stderr_file" ]; then
-              echo "Warnings/errors for $type:"
-              cat "$stderr_file"
-            fi
-
-            # Get the JSON matrix from stdout
-            local matrix_json=$(cat "$stdout_file")
-
-            # Clean up temp files
-            rm -f "$stdout_file" "$stderr_file"
-
-            # Return the matrix
-            echo "$matrix_json"
-          }
-
           echo "Generating rootfs matrix..."
-          rootfs_matrix=$(run_matrix_generation "rootfs" "rootfs_matrix")
+          rootfs_output=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type rootfs --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}" 2>&1)
+          rootfs_matrix=$(echo "$rootfs_output" | tail -n 1)
+          echo "$rootfs_output" | grep -E "⚠️.*Board config not found|⚠️.*Skipping board.*due to config issues" >> "$warnings_file" || true
           echo "rootfs_matrix=$rootfs_matrix" >> $GITHUB_OUTPUT
           rootfs_count=$(echo "$rootfs_matrix" | jq '.include | length')
           echo "rootfs_count=$rootfs_count" >> $GITHUB_OUTPUT
           echo "Rootfs matrix: $rootfs_matrix"
 
           echo "Generating kernel matrix..."
-          kernel_matrix=$(run_matrix_generation "kernel" "kernel_matrix")
+          kernel_output=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type kernel --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}" 2>&1)
+          kernel_matrix=$(echo "$kernel_output" | tail -n 1)
+          echo "$kernel_output" | grep -E "⚠️.*Board config not found|⚠️.*Skipping board.*due to config issues" >> "$warnings_file" || true
+          echo "kernel_matrix=$kernel_matrix" >> $GITHUB_OUTPUT
+          kernel_count=$(echo "$kernel_matrix" | jq '.include | length')
+          echo "kernel_count=$kernel_count" >> $GITHUB_OUTPUT
+          echo "Kernel matrix: $kernel_matrix"
+
+          echo "Generating uboot matrix..."
+          uboot_output=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type uboot --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}" 2>&1)
+          uboot_matrix=$(echo "$uboot_output" | tail -n 1)
+          echo "$uboot_output" | grep -E "⚠️.*Board config not found|⚠️.*Skipping board.*due to config issues" >> "$warnings_file" || true
+          echo "uboot_matrix=$uboot_matrix" >> $GITHUB_OUTPUT
+          uboot_count=$(echo "$uboot_matrix" | jq '.include | length')
+          echo "uboot_count=$uboot_count" >> $GITHUB_OUTPUT
+          echo "Uboot matrix: $uboot_matrix"
+
+          echo "Generating image matrix..."
+          image_output=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type image --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}" 2>&1)
+          image_matrix=$(echo "$image_output" | tail -n 1)
+          echo "$image_output" | grep -E "⚠️.*Board config not found|⚠️.*Skipping board.*due to config issues" >> "$warnings_file" || true
+          echo "image_matrix=$image_matrix" >> $GITHUB_OUTPUT
+          image_count=$(echo "$image_matrix" | jq '.include | length')
+          echo "image_count=$image_count" >> $GITHUB_OUTPUT
+          echo "Image matrix: $image_matrix"
           echo "kernel_matrix=$kernel_matrix" >> $GITHUB_OUTPUT
           kernel_count=$(echo "$kernel_matrix" | jq '.include | length')
           echo "kernel_count=$kernel_count" >> $GITHUB_OUTPUT
