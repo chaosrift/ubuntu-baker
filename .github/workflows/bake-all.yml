@@ -117,7 +117,8 @@ jobs:
 
   matrix:
     if: ${{ always() && github.actor == 'diverger' }}
-    runs-on: 'ubuntu-latest'
+    #! The runner of 'matrix' must be the same with the buildi jobs
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.runner) || (github.event_name == 'repository_dispatch' && github.event.client_payload.runner) || 'ubuntu-latest' }}
     needs: [update-release, oci-config]
     name: Generate Build Matrices
     outputs:
