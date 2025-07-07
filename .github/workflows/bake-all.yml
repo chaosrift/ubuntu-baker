@@ -145,8 +145,6 @@ jobs:
           RECIPE_DIR: ${{ env.RECIPE_DIR }}
         run: |
           cd "$RECIPE_DIR"
-          chmod +x scripts/ci/generate-build-matrix.sh
-          chmod +x scripts/ci/runner-infos.sh
 
           # Always detect OS version from runner
           eval "$(./scripts/ci/runner-infos.sh --github-export)"
