@@ -210,19 +210,19 @@ jobs:
           echo "| U-Boot | ${{ steps.matrices.outputs.uboot_count || 0 }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Images | ${{ steps.matrices.outputs.image_count || 0 }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🚀 U-Boot Deduplication Details" >> $GITHUB_STEP_SUMMARY
+          echo "### 🥾 U-Boot Deduplication Details" >> $GITHUB_STEP_SUMMARY
           echo '```json' >> $GITHUB_STEP_SUMMARY
           echo '${{ steps.matrices.outputs.uboot_matrix }}' | jq . >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "### 📦 Rootfs Matrix" >> $GITHUB_STEP_SUMMARY
+          echo "### 🗃️ Rootfs Matrix" >> $GITHUB_STEP_SUMMARY
           echo '```json' >> $GITHUB_STEP_SUMMARY
           echo '${{ steps.matrices.outputs.rootfs_matrix }}' | jq . >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "### 🧬 Kernel Matrix" >> $GITHUB_STEP_SUMMARY
+          echo "### 🐧 Kernel Matrix" >> $GITHUB_STEP_SUMMARY
           echo '```json' >> $GITHUB_STEP_SUMMARY
           echo '${{ steps.matrices.outputs.kernel_matrix }}' | jq . >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "### 🖼️ Image Matrix" >> $GITHUB_STEP_SUMMARY
+          echo "### 💿 Image Matrix" >> $GITHUB_STEP_SUMMARY
           echo '```json' >> $GITHUB_STEP_SUMMARY
           echo '${{ steps.matrices.outputs.image_matrix }}' | jq . >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
