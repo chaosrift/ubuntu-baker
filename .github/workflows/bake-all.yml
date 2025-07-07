@@ -149,7 +149,7 @@ jobs:
           chmod +x scripts/ci/runner-infos.sh
 
           # Always detect OS version from runner
-          ./scripts/ci/runner-infos.sh --github-export
+          eval "$(./scripts/ci/runner-infos.sh --github-export)"
 
           echo "🎯 Building for boards: $BOARDS_TO_BUILD"
           echo "Using OS version: $os_version"
