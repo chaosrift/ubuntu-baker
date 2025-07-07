@@ -148,37 +148,37 @@ jobs:
           chmod +x scripts/ci/generate-build-matrix.sh
 
           # Always detect OS version from runner
-          OS_VERSION="$(lsb_release -is | tr '[:upper:]' '[:lower:]')-$(lsb_release -rs)"
+          ./scripts/ci/runner-infos.sh --github-output
 
           echo "🎯 Building for boards: $BOARDS_TO_BUILD"
-          echo "Using OS version: $OS_VERSION"
+          echo "Using OS version: $os_version"
 
           # Capture all warnings and errors from matrix generation
           warnings_file=$(mktemp)
 
           echo "Generating rootfs matrix..."
-          rootfs_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type rootfs --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}" 2> >(tee -a "$warnings_file" >&2))
+          rootfs_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type rootfs --output json --os-version "$os_version" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}" 2> >(tee -a "$warnings_file" >&2))
           echo "rootfs_matrix=$rootfs_matrix" >> $GITHUB_OUTPUT
           rootfs_count=$(echo "$rootfs_matrix" | jq '.include | length')
           echo "rootfs_count=$rootfs_count" >> $GITHUB_OUTPUT
           echo "Rootfs matrix: $rootfs_matrix"
 
           echo "Generating kernel matrix..."
-          kernel_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type kernel --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}" 2> >(tee -a "$warnings_file" >&2))
+          kernel_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type kernel --output json --os-version "$os_version" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}" 2> >(tee -a "$warnings_file" >&2))
           echo "kernel_matrix=$kernel_matrix" >> $GITHUB_OUTPUT
           kernel_count=$(echo "$kernel_matrix" | jq '.include | length')
           echo "kernel_count=$kernel_count" >> $GITHUB_OUTPUT
           echo "Kernel matrix: $kernel_matrix"
 
           echo "Generating uboot matrix..."
-          uboot_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type uboot --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}" 2> >(tee -a "$warnings_file" >&2))
+          uboot_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type uboot --output json --os-version "$os_version" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}" 2> >(tee -a "$warnings_file" >&2))
           echo "uboot_matrix=$uboot_matrix" >> $GITHUB_OUTPUT
           uboot_count=$(echo "$uboot_matrix" | jq '.include | length')
           echo "uboot_count=$uboot_count" >> $GITHUB_OUTPUT
           echo "Uboot matrix: $uboot_matrix"
 
           echo "Generating image matrix..."
-          image_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type image --output json --os-version "$OS_VERSION" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}" 2> >(tee -a "$warnings_file" >&2))
+          image_matrix=$(scripts/ci/generate-build-matrix.sh --boards "$BOARDS_TO_BUILD" --type image --output json --os-version "$os_version" --registry-url "${{ needs.oci-config.outputs.registry_server }}" --namespace "${{ needs.oci-config.outputs.registry_namespace }}" 2> >(tee -a "$warnings_file" >&2))
           echo "image_matrix=$image_matrix" >> $GITHUB_OUTPUT
           image_count=$(echo "$image_matrix" | jq '.include | length')
           echo "image_count=$image_count" >> $GITHUB_OUTPUT
