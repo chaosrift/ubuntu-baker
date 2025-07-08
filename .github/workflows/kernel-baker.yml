@@ -10,6 +10,12 @@ on:
         default: 'orange-5-plus'
         type: string
 
+      dts_only:
+        description: 'Build DTS only'
+        required: false
+        type: boolean
+        default: false
+
       artifact_retention_days:
         description: 'Number of days to retain artifacts'
         required: false
@@ -135,6 +141,7 @@ jobs:
         uses: "./.github/actions/kernel-baker"
         with:
           board: ${{ env.BOARD }}
+          dts_only: ${{ github.event.inputs.dts_only || github.event.client_payload.dts_only || false }}
           registry_upload: ${{ env.REGISTRY_TYPE != 'none' }}
           registry_check: ${{ env.REGISTRY_TYPE != 'none' }}
           registry_url: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_SERVERID || 'ghcr.io' }}
