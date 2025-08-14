@@ -1,5 +1,5 @@
 name: "Bake kernel on dispatch"
-run-name: "Build ${{ (github.event.inputs.dts_only == true || github.event.client_payload.dts_only == 'true') && 'DTS' || 'kernel' }} for ${{ github.event.inputs.board || github.event.client_payload.board }} by @${{ github.actor }} (Trigger: ${{ github.event.client_payload.trigger_source || github.event_name }})"
+run-name: "Build ${{ github.event.client_payload.dts_only == 'true' && 'DTS' || github.event.inputs.dts_only && 'DTS' || 'kernel' }} for ${{ github.event.inputs.board || github.event.client_payload.board }} by @${{ github.actor }} (Trigger: ${{ github.event.client_payload.trigger_source || github.event_name }})"
 
 on:
   workflow_dispatch:
@@ -142,7 +142,7 @@ jobs:
         uses: "./.github/actions/kernel-baker"
         with:
           board: ${{ env.BOARD }}
-          dts_only: ${{ (github.event.inputs.dts_only == true || github.event.client_payload.dts_only == 'true') && 'true' || 'false' }}
+          dts_only: ${{ github.event.inputs.dts_only || github.event.client_payload.dts_only || false }}
           registry_upload: ${{ env.REGISTRY_TYPE != 'none' }}
           registry_check: ${{ env.REGISTRY_TYPE != 'none' }}
           registry_url: ${{ env.REGISTRY_TYPE == 'acr' && secrets.ACR_SERVERID || 'ghcr.io' }}
