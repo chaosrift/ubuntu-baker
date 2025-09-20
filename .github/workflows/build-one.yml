@@ -126,7 +126,7 @@ jobs:
           dotnet: true
           haskell: true
           large-packages: true
-          swap-storage: true
+          swap-storage: false
 
       - name: Checkout private repository
         uses: actions/checkout@v4
