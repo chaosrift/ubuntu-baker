@@ -115,16 +115,16 @@ jobs:
           echo "expire_date=$expire_date" >> $GITHUB_OUTPUT
           echo "### Artifact Expire Date: $expire_date" >> $GITHUB_STEP_SUMMARY
 
-      - name: Get more disk space
-        if: ${{ !(github.event.inputs.dts_only == true || github.event.client_payload.dts_only == 'true') }}
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: false
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          swap-storage: false
+      # - name: Get more disk space
+      #   if: ${{ !(github.event.inputs.dts_only == true || github.event.client_payload.dts_only == 'true') }}
+      #   uses: jlumbroso/free-disk-space@main
+      #   with:
+      #     tool-cache: false
+      #     android: true
+      #     dotnet: true
+      #     haskell: true
+      #     large-packages: true
+      #     swap-storage: false
 
       - name: Checkout build repository
         uses: actions/checkout@v4

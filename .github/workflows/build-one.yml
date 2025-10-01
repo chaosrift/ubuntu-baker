@@ -118,15 +118,15 @@ jobs:
           echo "  Namespace: ${{ github.event.inputs.registry_namespace || github.repository }}"
           echo "  ORAS: action (default)"
 
-      - name: Get more disk space
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: false
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          swap-storage: false
+      # - name: Get more disk space
+      #   uses: jlumbroso/free-disk-space@main
+      #   with:
+      #     tool-cache: false
+      #     android: true
+      #     dotnet: true
+      #     haskell: true
+      #     large-packages: true
+      #     swap-storage: false
 
       - name: Checkout private repository
         uses: actions/checkout@v4
