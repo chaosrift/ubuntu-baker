@@ -25,7 +25,7 @@ env:
   MIRROR_REPO: ${{ secrets.MIRROR_REPO }}  # Format: username/repo-name
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
