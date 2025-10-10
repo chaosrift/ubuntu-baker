@@ -506,33 +506,23 @@ jobs:
       - uboot
       - image
     runs-on: ubuntu-latest
-cleanup:
-  if: ${{ always() && github.actor == 'diverger' && (github.event.inputs.release_tag || github.event.client_payload.release_tag) && needs.update-release.result == 'success' && (failure() || cancelled()) }}
-  needs:
-    - update-release
-    - matrix
-    - oci-config
-    - rootfs
-    - kernel
-    - uboot
-    - image
-  runs-on: ubuntu-latest
-  steps:
-    - name: Checkout build repository
-      uses: actions/checkout@v4
-      with:
-        repository: ${{ env.RECIPE_REP }}
-        ref: ${{ env.RECIPE_REF }}
-        token: ${{ secrets.GH_ACCESS_TOKEN }}
-        path: ${{ env.RECIPE_DIR }}
-        clean: false
-        fetch-depth: 1
-        lfs: true
 
-    - name: Revert release
-      uses: ./.github/actions/update-release
-      with:
-        token: ${{ secrets.GH_ACCESS_TOKEN }}
-        release_tag: ${{ env.EFFECTIVE_RELEASE_TAG }}
-        baker_repo: ${{ github.repository }}
-        operation: revert
+    steps:
+      - name: Checkout build repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.RECIPE_REP }}
+          ref: ${{ env.RECIPE_REF }}
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          path: ${{ env.RECIPE_DIR }}
+          clean: false
+          fetch-depth: 1
+          lfs: true
+
+      - name: Revert release
+        uses: ./.github/actions/update-release
+        with:
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          release_tag: ${{ env.EFFECTIVE_RELEASE_TAG }}
+          baker_repo: ${{ github.repository }}
+          operation: revert
