@@ -496,14 +496,22 @@ jobs:
           echo "📅 Artifact Expire Date: $expire_date" >> $GITHUB_STEP_SUMMARY
 
   cleanup:
-    if: ${{ github.actor == 'diverger' }}
+    if: ${{ github.actor == 'diverger' && (failure() || cancelled()) }}
+    needs:
+      - update-release
+      - matrix
+      - oci-config
+      - rootfs
+      - kernel
+      - uboot
+      - image
     runs-on: ubuntu-latest
     steps:
       - name: Revert release
-        if: ${{ failure() || cancelled() }}
         uses: ./.github/actions/update-release
         with:
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           release_tag: ${{ env.EFFECTIVE_RELEASE_TAG }}
           baker_repo: ${{ github.repository }}
+          operation: revert
           operation: revert
