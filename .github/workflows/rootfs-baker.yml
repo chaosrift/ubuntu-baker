@@ -139,6 +139,7 @@ jobs:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
+          persist-credentials: false
           path: ${{ env.RECIPE_DIR }}
           clean: false
           fetch-depth: 1

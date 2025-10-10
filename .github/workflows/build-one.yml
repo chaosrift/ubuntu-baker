@@ -137,6 +137,7 @@ jobs:
           clean: false
           fetch-depth: 1
           lfs: true
+          persist-credentials: false
 
       - name: Run local build
         uses: ./.github/actions/image-build
