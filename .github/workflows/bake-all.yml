@@ -97,7 +97,7 @@ jobs:
     name: Update Release Note
     steps:
       - name: Checkout build repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
@@ -128,7 +128,7 @@ jobs:
       image_matrix: ${{ steps.matrices.outputs.image_matrix }}
     steps:
       - name: Checkout build repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
@@ -297,7 +297,7 @@ jobs:
       #     swap-storage: false
 
       - name: Checkout private repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
@@ -349,7 +349,7 @@ jobs:
       #     swap-storage: false
 
       - name: Checkout private repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
@@ -399,7 +399,7 @@ jobs:
       #     swap-storage: false
 
       - name: Checkout private repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
@@ -449,7 +449,7 @@ jobs:
       #     swap-storage: false
 
       - name: Checkout private repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
@@ -495,3 +495,37 @@ jobs:
           echo "expire_date=$expire_date" >> $GITHUB_OUTPUT
           echo "📅 Artifact Expire Date: $expire_date" >> $GITHUB_STEP_SUMMARY
 
+  cleanup:
+    # The combination of always() with failure() || cancelled() ensures the cleanup runs when:
+    #   (1) a release tag exists,
+    #   (2) any downstream job failed or was cancelled.
+    if: ${{ always() && github.actor == 'diverger' && (github.event.inputs.release_tag || github.event.client_payload.release_tag) && (failure() || cancelled()) }}
+    needs:
+      - update-release
+      - matrix
+      - oci-config
+      - rootfs
+      - kernel
+      - uboot
+      - image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout build repository
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ env.RECIPE_REP }}
+          ref: ${{ env.RECIPE_REF }}
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          path: ${{ env.RECIPE_DIR }}
+          clean: false
+          fetch-depth: 1
+          lfs: true
+
+      - name: Revert release
+        uses: ./.github/actions/update-release
+        with:
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          release_tag: ${{ env.EFFECTIVE_RELEASE_TAG }}
+          baker_repo: ${{ github.repository }}
+          operation: revert
