@@ -496,7 +496,7 @@ jobs:
           echo "📅 Artifact Expire Date: $expire_date" >> $GITHUB_STEP_SUMMARY
 
   cleanup:
-    if: ${{ github.actor == 'diverger' && (failure() || cancelled()) }}
+    if: ${{ github.actor == 'diverger' && env.EFFECTIVE_RELEASE_TAG != '' && (failure() || cancelled()) }}
     needs:
       - update-release
       - matrix
