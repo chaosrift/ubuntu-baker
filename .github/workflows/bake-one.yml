@@ -91,7 +91,7 @@ jobs:
       #     swap-storage: false
 
       - name: Checkout private repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
@@ -150,7 +150,7 @@ jobs:
           swap-storage: false
 
       - name: Checkout private repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
@@ -191,7 +191,7 @@ jobs:
           swap-storage: false
 
       - name: Checkout build repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
@@ -231,7 +231,7 @@ jobs:
           swap-storage: false
 
       - name: Checkout private repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}

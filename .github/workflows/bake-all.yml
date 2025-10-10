@@ -97,7 +97,7 @@ jobs:
     name: Update Release Note
     steps:
       - name: Checkout build repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
@@ -128,7 +128,7 @@ jobs:
       image_matrix: ${{ steps.matrices.outputs.image_matrix }}
     steps:
       - name: Checkout build repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
@@ -297,7 +297,7 @@ jobs:
       #     swap-storage: false
 
       - name: Checkout private repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
@@ -349,7 +349,7 @@ jobs:
       #     swap-storage: false
 
       - name: Checkout private repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
@@ -399,7 +399,7 @@ jobs:
       #     swap-storage: false
 
       - name: Checkout private repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
@@ -449,7 +449,7 @@ jobs:
       #     swap-storage: false
 
       - name: Checkout private repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
@@ -496,7 +496,10 @@ jobs:
           echo "📅 Artifact Expire Date: $expire_date" >> $GITHUB_STEP_SUMMARY
 
   cleanup:
-    if: ${{ always() && github.actor == 'diverger' && (github.event.inputs.release_tag || github.event.client_payload.release_tag) && needs.update-release.result == 'success' && (failure() || cancelled()) }}
+    # The combination of always() with failure() || cancelled() ensures the cleanup runs when:
+    #   (1) a release tag exists,
+    #   (2) any downstream job failed or was cancelled.
+    if: ${{ always() && github.actor == 'diverger' && (github.event.inputs.release_tag || github.event.client_payload.release_tag) && (failure() || cancelled()) }}
     needs:
       - update-release
       - matrix
@@ -509,7 +512,7 @@ jobs:
 
     steps:
       - name: Checkout build repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
