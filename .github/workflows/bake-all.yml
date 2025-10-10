@@ -513,5 +513,5 @@ jobs:
           token: ${{ secrets.GH_ACCESS_TOKEN }}
           release_tag: ${{ env.EFFECTIVE_RELEASE_TAG }}
           baker_repo: ${{ github.repository }}
-          operation: revert
+          baker_repo: ${{ github.repository }}
           operation: revert
