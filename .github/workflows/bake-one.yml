@@ -100,6 +100,7 @@ jobs:
           clean: false
           fetch-depth: 1
           lfs: true
+          persist-credentials: false
 
       - name: Extract variant from board config
         id: extract_variant
@@ -159,6 +160,7 @@ jobs:
           clean: false
           fetch-depth: 1
           lfs: true
+          persist-credentials: false
 
       - name: Run local build
         id: kernel_baker_step
@@ -200,6 +202,7 @@ jobs:
           clean: false
           fetch-depth: 1
           lfs: true
+          persist-credentials: false
 
       - name: Run local build
         id: uboot_baker_step
@@ -240,6 +243,8 @@ jobs:
           clean: false
           fetch-depth: 1
           lfs: true
+          persist-credentials: false
+
 
       - name: Run local build
         id: image_build_step

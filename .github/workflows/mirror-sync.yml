@@ -24,8 +24,15 @@ on:
 env:
   MIRROR_REPO: ${{ secrets.MIRROR_REPO }}  # Format: username/repo-name
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: false
+
 jobs:
   sync-repository:
+    permissions:
+      contents: write
+
     if: ${{ github.actor == 'diverger' && github.repository_owner == 'diverger' }}
     runs-on: ubuntu-latest
     steps:
@@ -34,6 +41,7 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GH_ACCESS_TOKEN }}
+          persist-credentials: false
 
       - name: Configure Git
         run: |

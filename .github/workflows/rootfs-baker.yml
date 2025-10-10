@@ -139,10 +139,12 @@ jobs:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
           token: ${{ secrets.GH_ACCESS_TOKEN }}
+          persist-credentials: false
           path: ${{ env.RECIPE_DIR }}
           clean: false
           fetch-depth: 1
           lfs: true
+          persist-credentials: false
 
       - name: Run local build
         id: baker_step
