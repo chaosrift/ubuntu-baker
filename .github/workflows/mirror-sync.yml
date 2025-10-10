@@ -41,7 +41,8 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GH_ACCESS_TOKEN }}
-          persist-credentials: false
+          # we explicitly save the token to local to facilitate the following git operations
+          persist-credentials: true
 
       - name: Configure Git
         run: |
