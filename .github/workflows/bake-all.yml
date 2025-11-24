@@ -97,7 +97,7 @@ jobs:
     name: Update Release Note
     steps:
       - name: Checkout build repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
@@ -129,7 +129,7 @@ jobs:
       image_matrix: ${{ steps.matrices.outputs.image_matrix }}
     steps:
       - name: Checkout build repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
@@ -299,7 +299,7 @@ jobs:
       #     swap-storage: false
 
       - name: Checkout private repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
@@ -352,7 +352,7 @@ jobs:
       #     swap-storage: false
 
       - name: Checkout private repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
@@ -403,7 +403,7 @@ jobs:
       #     swap-storage: false
 
       - name: Checkout private repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
@@ -454,7 +454,7 @@ jobs:
       #     swap-storage: false
 
       - name: Checkout private repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
@@ -518,7 +518,7 @@ jobs:
 
     steps:
       - name: Checkout build repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: ${{ env.RECIPE_REP }}
           ref: ${{ env.RECIPE_REF }}
